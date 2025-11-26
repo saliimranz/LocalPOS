@@ -369,6 +369,16 @@ Public Class _Default
         UpdatePaymentAvailability()
     End Sub
 
+    Protected Sub btnViewCustomerProfile_Click(sender As Object, e As EventArgs)
+        Dim selectedId As Integer
+        If Not Integer.TryParse(ddlCustomers.SelectedValue, NumberStyles.Integer, CultureInfo.InvariantCulture, selectedId) OrElse selectedId <= 0 Then
+            ShowCartMessage("Select a saved customer to open their profile.", False)
+            Return
+        End If
+
+        Response.Redirect($"~/CustomerProfile.aspx?customerId={selectedId}", False)
+    End Sub
+
     Private Sub UpdatePaymentAvailability()
         Dim isCorporateCustomer = IsCorporateCustomerSelected()
         hfIsCorporateCustomer.Value = If(isCorporateCustomer, "true", "false")

@@ -44,5 +44,28 @@ Namespace LocalPOS.Services
         Public Function CompleteCheckout(request As CheckoutRequest) As CheckoutResult
             Return _orderRepository.CreateOrder(request)
         End Function
+
+        Public Function GetCustomerOrders(dealerId As Integer) As IList(Of CustomerOrderSummary)
+            Return _orderRepository.GetCustomerOrders(dealerId)
+        End Function
+
+        Public Function GetOrderPayments(orderId As Integer) As IList(Of OrderPaymentRecord)
+            Return _orderRepository.GetOrderPayments(orderId)
+        End Function
+
+        Public Function GetPendingPaymentContext(orderId As Integer) As PendingPaymentContext
+            Return _orderRepository.GetPendingPaymentContext(orderId)
+        End Function
+
+        Public Function CompletePendingPayment(request As PendingPaymentRequest) As PendingPaymentResult
+            If request Is Nothing Then Throw New ArgumentNullException(NameOf(request))
+            Dim context = _orderRepository.GetPendingPaymentContext(request.OrderId)
+            If context Is Nothing Then
+                Throw New InvalidOperationException("Order is already settled or was not found.")
+            End If
+
+            request.PaymentAmount = context.OutstandingAmount
+            Return _orderRepository.CompletePendingPayment(request, context)
+        End Function
     End Class
 End Namespace
