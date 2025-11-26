@@ -4,7 +4,10 @@
     <div class="customer-profile-shell">
         <div class="pos-header customer-profile-header">
             <div>
-                <asp:HyperLink runat="server" ID="lnkBackToPos" CssClass="btn btn-link ps-0" NavigateUrl="~/Default.aspx">&larr; Back to POS</asp:HyperLink>
+                <asp:HyperLink runat="server" ID="lnkBackToPos" CssClass="btn btn-light btn-back-to-pos" NavigateUrl="~/Default.aspx">
+                    <span class="back-icon" aria-hidden="true">&larr;</span>
+                    Back to POS
+                </asp:HyperLink>
                 <div class="terminal-name">
                     <asp:Literal runat="server" ID="litCustomerName"></asp:Literal>
                 </div>
@@ -12,9 +15,9 @@
                     Customer code: <asp:Literal runat="server" ID="litCustomerCode"></asp:Literal>
                 </div>
             </div>
-            <div class="datetime text-end">
-                <div class="text-muted small">Outstanding</div>
-                <div class="display-6 fw-bold text-dark">
+            <div class="datetime text-end text-white">
+                <div class="customer-outstanding-label small fw-semibold">Outstanding</div>
+                <div class="display-6 fw-bold customer-outstanding-amount">
                     <asp:Literal runat="server" ID="litOutstandingHeader"></asp:Literal>
                 </div>
             </div>
