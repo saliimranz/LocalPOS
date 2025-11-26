@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -143,10 +143,13 @@
     <Content Include="Content\bootstrap.rtl.css" />
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="Content\Site.css" />
+    <Content Include="DatabaseScripts\CreatePaymentsTable.sql" />
+    <Content Include="DatabaseScripts\CreateSkuTable.sql" />
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="Scripts\bootstrap.bundle.js" />
+    <Content Include="Scripts\custom\pos.js" />
     <Content Include="Scripts\bootstrap.bundle.min.js" />
     <Content Include="Scripts\bootstrap.esm.js" />
     <Content Include="Scripts\bootstrap.esm.min.js" />
@@ -207,6 +210,16 @@
   <ItemGroup>
     <Compile Include="App_Start\BundleConfig.vb" />
     <Compile Include="App_Start\RouteConfig.vb" />
+    <Compile Include="Data\DealerRepository.vb" />
+    <Compile Include="Data\OrderRepository.vb" />
+    <Compile Include="Data\ProductRepository.vb" />
+    <Compile Include="Data\SqlRepositoryBase.vb" />
+    <Compile Include="Models\CartItem.vb" />
+    <Compile Include="Models\CheckoutRequest.vb" />
+    <Compile Include="Models\CheckoutResult.vb" />
+    <Compile Include="Models\Dealer.vb" />
+    <Compile Include="Models\Product.vb" />
+    <Compile Include="Services\PosService.vb" />
     <Compile Include="About.aspx.designer.vb">
       <DependentUpon>About.aspx</DependentUpon>
     </Compile>
