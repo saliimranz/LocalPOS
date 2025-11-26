@@ -77,6 +77,15 @@ Partial Public Class _Default
     Protected WithEvents btnSearch As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
+    '''lnkManageProducts control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents lnkManageProducts As Global.System.Web.UI.WebControls.HyperLink
+
+    '''<summary>
     '''btnAllCategories control.
     '''</summary>
     '''<remarks>

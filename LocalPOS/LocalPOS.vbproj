@@ -155,6 +155,8 @@
     <Content Include="DatabaseScripts\CreatePaymentsTable.sql" />
     <Content Include="DatabaseScripts\CreateSkuTable.sql" />
     <Content Include="Default.aspx" />
+    <Content Include="ManageProducts.aspx" />
+    <Content Include="ProductDetails.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="Scripts\bootstrap.bundle.js" />
@@ -216,6 +218,7 @@
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
     <Content Include="recipts\.gitkeep" />
+    <Content Include="product media\.gitkeep" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\BundleConfig.vb" />
@@ -229,6 +232,9 @@
     <Compile Include="Models\CheckoutResult.vb" />
     <Compile Include="Models\Dealer.vb" />
     <Compile Include="Models\Product.vb" />
+    <Compile Include="Models\ProductCreateRequest.vb" />
+    <Compile Include="Models\ProductSkuRequest.vb" />
+    <Compile Include="Models\ProductUpdateRequest.vb" />
     <Compile Include="Services\PosService.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
     <Compile Include="About.aspx.designer.vb">
@@ -251,6 +257,20 @@
     </Compile>
     <Compile Include="Default.aspx.designer.vb">
       <DependentUpon>Default.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ManageProducts.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>ManageProducts.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ManageProducts.aspx.designer.vb">
+      <DependentUpon>ManageProducts.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ProductDetails.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>ProductDetails.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ProductDetails.aspx.designer.vb">
+      <DependentUpon>ProductDetails.aspx</DependentUpon>
     </Compile>
     <Compile Include="Global.asax.vb">
       <DependentUpon>Global.asax</DependentUpon>
@@ -329,6 +349,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="product media\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

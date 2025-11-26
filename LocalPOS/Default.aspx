@@ -40,6 +40,10 @@
                             <button type="button" class="scan-btn">Scan</button>
                         </div>
 
+                        <div class="pos-toolbar">
+                            <asp:HyperLink runat="server" ID="lnkManageProducts" CssClass="btn btn-outline-secondary" NavigateUrl="~/ManageProducts.aspx">Manage catalog</asp:HyperLink>
+                        </div>
+
                         <div class="category-pills">
                             <asp:LinkButton runat="server" ID="btnAllCategories" CssClass="category-pill" CommandName="FilterCategory" OnClick="btnAllCategories_Click" Text="All"></asp:LinkButton>
                             <asp:Repeater runat="server" ID="rptCategories">
@@ -59,23 +63,27 @@
                             <asp:Repeater runat="server" ID="rptProducts">
                                 <ItemTemplate>
                                     <div class="product-card">
-                                        <div class="product-thumb">
-                                            <asp:Image runat="server" CssClass="product-thumb-img" ImageUrl='<%# GetProductImage(Eval("ImageUrl")) %>' AlternateText='<%# Eval("DisplayName") %>' />
-                                            <span class="product-price-chip"><%# Eval("UnitPrice", "{0:C}") %></span>
-                                        </div>
-                                        <div class="product-info">
+                                        <asp:HyperLink runat="server"
+                                            CssClass="product-card-link"
+                                            NavigateUrl='<%# GetProductDetailsUrl(Eval("Id")) %>'>
+                                            <div class="product-thumb">
+                                                <asp:Image runat="server" CssClass="product-thumb-img" ImageUrl='<%# GetProductImage(Eval("ImageUrl")) %>' AlternateText='<%# Eval("DisplayName") %>' />
+                                                <span class="product-price-chip"><%# Eval("UnitPrice", "{0:C}") %></span>
+                                            </div>
+                                            <div class="product-info">
                                             <div class="product-name"><%# Eval("DisplayName") %></div>
                                             <div class="product-meta">
                                                 <small><%# Eval("Category") %></small>
                                                 <small>SKU: <%# Eval("SkuCode") %></small>
                                             </div>
-                                        </div>
-                                        <asp:Panel runat="server"
-                                            CssClass="low-stock-banner"
-                                            Visible='<%# IsLowStock(Eval("StockQuantity"), Eval("MinStockThreshold")) %>'>
-                                            <span class="low-stock-dot"></span>
-                                            <span><%# GetLowStockText(Eval("StockQuantity")) %></span>
-                                        </asp:Panel>
+                                            </div>
+                                            <asp:Panel runat="server"
+                                                CssClass="low-stock-banner"
+                                                Visible='<%# IsLowStock(Eval("StockQuantity"), Eval("MinStockThreshold")) %>'>
+                                                <span class="low-stock-dot"></span>
+                                                <span><%# GetLowStockText(Eval("StockQuantity")) %></span>
+                                            </asp:Panel>
+                                        </asp:HyperLink>
                                         <asp:Button runat="server"
                                             CssClass='<%# GetAddToCartCss(Eval("StockQuantity")) %>'
                                             CommandName="AddToCart"
