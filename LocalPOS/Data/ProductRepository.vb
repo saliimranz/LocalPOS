@@ -36,7 +36,8 @@ Namespace LocalPOS.Data
         sku.RetailPrice,
         sku.TaxRate,
         COALESCE(sku.DisplayDescription, sp.Description, '') AS Description,
-        sku.StockQuantity
+        sku.StockQuantity,
+        sku.MinStockThreshold
 FROM dbo.SPARE_PARTS sp
 INNER JOIN dbo.TBL_SP_PSO_SKU sku ON sku.SparePartsId = sp.ID
 WHERE sku.IsActive = 1
@@ -75,7 +76,8 @@ ORDER BY sku.DisplayName"
         sku.RetailPrice,
         sku.TaxRate,
         COALESCE(sku.DisplayDescription, sp.Description, '') AS Description,
-        sku.StockQuantity
+        sku.StockQuantity,
+        sku.MinStockThreshold
 FROM dbo.SPARE_PARTS sp
 INNER JOIN dbo.TBL_SP_PSO_SKU sku ON sku.SparePartsId = sp.ID
 WHERE sku.IsActive = 1 AND sku.ID = @Id"
@@ -103,7 +105,8 @@ WHERE sku.IsActive = 1 AND sku.ID = @Id"
                 .UnitPrice = reader.GetDecimal(reader.GetOrdinal("RetailPrice")),
                 .TaxRate = reader.GetDecimal(reader.GetOrdinal("TaxRate")),
                 .Description = reader.GetString(reader.GetOrdinal("Description")),
-                .StockQuantity = reader.GetInt32(reader.GetOrdinal("StockQuantity"))
+                .StockQuantity = reader.GetInt32(reader.GetOrdinal("StockQuantity")),
+                .MinStockThreshold = reader.GetInt32(reader.GetOrdinal("MinStockThreshold"))
             }
             Return product
         End Function

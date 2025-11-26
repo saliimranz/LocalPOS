@@ -16,5 +16,6 @@ Namespace LocalPOS.Models
         Public Property TaxRate As Decimal
         Public Property Description As String
         Public Property StockQuantity As Integer
+        Public Property MinStockThreshold As Integer
     End Class
 End Namespace

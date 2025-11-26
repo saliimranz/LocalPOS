@@ -4,5 +4,6 @@ Namespace LocalPOS.Models
         Public Property OrderNumber As String
         Public Property ReceiptNumber As String
         Public Property RemainingBalance As Decimal
+        Public Property ReceiptFilePath As String
     End Class
 End Namespace

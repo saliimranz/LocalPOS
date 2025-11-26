@@ -190,6 +190,46 @@ Public Class _Default
         Return imagePath.ToString()
     End Function
 
+    Protected Function IsLowStock(stockObj As Object, thresholdObj As Object) As Boolean
+        Dim stock = ConvertToInt(stockObj)
+        Dim threshold = ConvertToInt(thresholdObj)
+        If threshold <= 0 Then
+            Return False
+        End If
+        Return stock <= threshold
+    End Function
+
+    Protected Function GetLowStockText(stockObj As Object) As String
+        Dim stock = ConvertToInt(stockObj)
+        stock = Math.Max(0, stock)
+        Return $"Low stock - {stock} left"
+    End Function
+
+    Protected Function IsOutOfStock(stockObj As Object) As Boolean
+        Return ConvertToInt(stockObj) <= 0
+    End Function
+
+    Protected Function GetAddToCartText(stockObj As Object) As String
+        Return If(IsOutOfStock(stockObj), "Out of stock", "Add to cart")
+    End Function
+
+    Protected Function GetAddToCartCss(stockObj As Object) As String
+        Const baseClass = "btn btn-light btn-add-to-cart"
+        Return If(IsOutOfStock(stockObj), $"{baseClass} disabled", baseClass)
+    End Function
+
+    Private Shared Function ConvertToInt(value As Object) As Integer
+        If value Is Nothing OrElse value Is DBNull.Value Then
+            Return 0
+        End If
+
+        Dim parsed As Integer
+        If Integer.TryParse(value.ToString(), parsed) Then
+            Return parsed
+        End If
+        Return 0
+    End Function
+
     Protected Sub btnSearch_Click(sender As Object, e As EventArgs)
         BindProducts()
     End Sub
@@ -224,6 +264,11 @@ Public Class _Default
             Return
         End If
 
+        If product.StockQuantity <= 0 Then
+            ShowCartMessage($"{product.DisplayName} is out of stock.", False)
+            Return
+        End If
+
         Dim cart = GetCart()
         Dim existing = cart.FirstOrDefault(Function(item) item.ProductId = product.Id)
 
@@ -238,7 +283,7 @@ Public Class _Default
                 .Thumbnail = product.ImageUrl
             })
         Else
-            If product.StockQuantity > 0 AndAlso existing.Quantity >= product.StockQuantity Then
+            If existing.Quantity >= product.StockQuantity Then
                 ShowCartMessage("Cannot add more than available stock.", False)
                 Return
             End If
@@ -266,6 +311,25 @@ Public Class _Default
         Dim cart = GetCart()
         Dim item = cart.FirstOrDefault(Function(ci) ci.ProductId = productId)
         If item Is Nothing Then Return
+
+        If delta > 0 Then
+            Dim product = _posService.GetProduct(productId)
+            If product Is Nothing Then
+                ShowCartMessage("Product was not found.", False)
+                Return
+            End If
+
+            If product.StockQuantity <= 0 Then
+                ShowCartMessage($"{item.Name} is out of stock.", False)
+                Return
+            End If
+
+            Dim desiredQuantity = item.Quantity + delta
+            If desiredQuantity > product.StockQuantity Then
+                ShowCartMessage("Cannot exceed available stock.", False)
+                Return
+            End If
+        End If
 
         item.Quantity += delta
         If item.Quantity <= 0 Then
@@ -475,16 +539,34 @@ Public Class _Default
             End Select
 
             Dim result = _posService.CompleteCheckout(request)
+            Dim receiptPath = SaveReceiptPdf(request, result)
+            If Not String.IsNullOrWhiteSpace(receiptPath) Then
+                result.ReceiptFilePath = receiptPath
+            End If
 
             GetCart().Clear()
             ResetPaymentFormState()
             BindCart()
             ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HidePaymentModal", "PosUI.hidePaymentModal();", True)
-            ShowCartMessage($"Order {result.OrderNumber} completed. Receipt {result.ReceiptNumber}.", True)
+            Dim confirmation = $"Order {result.OrderNumber} completed. Receipt {result.ReceiptNumber}."
+            If Not String.IsNullOrWhiteSpace(receiptPath) Then
+                confirmation &= " Receipt PDF saved to recipts folder."
+            End If
+            ShowCartMessage(confirmation, True)
         Catch ex As Exception
             lblCheckoutError.Text = $"Checkout failed: {ex.Message}"
         End Try
     End Sub
+
+    Private Function SaveReceiptPdf(request As CheckoutRequest, result As CheckoutResult) As String
+        Try
+            Dim generator = New ReceiptGenerator(Server.MapPath("~"))
+            Return generator.Generate(request, result)
+        Catch
+            ' Receipt generation issues should not block checkout completion.
+            Return String.Empty
+        End Try
+    End Function
 
     Private Sub ResetPaymentFormState()
         txtCashReceived.Text = String.Empty
