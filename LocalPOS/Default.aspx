@@ -70,11 +70,18 @@
                                                 <small>SKU: <%# Eval("SkuCode") %></small>
                                             </div>
                                         </div>
+                                        <asp:Panel runat="server"
+                                            CssClass="low-stock-banner"
+                                            Visible='<%# IsLowStock(Eval("StockQuantity"), Eval("MinStockThreshold")) %>'>
+                                            <span class="low-stock-dot"></span>
+                                            <span><%# GetLowStockText(Eval("StockQuantity")) %></span>
+                                        </asp:Panel>
                                         <asp:Button runat="server"
-                                            CssClass="btn btn-light btn-add-to-cart"
+                                            CssClass='<%# GetAddToCartCss(Eval("StockQuantity")) %>'
                                             CommandName="AddToCart"
                                             CommandArgument='<%# Eval("Id") %>'
-                                            Text="Add to cart"
+                                            Text='<%# GetAddToCartText(Eval("StockQuantity")) %>'
+                                            Enabled='<%# Not IsOutOfStock(Eval("StockQuantity")) %>'
                                             OnCommand="Product_Command" />
                                     </div>
                                 </ItemTemplate>
