@@ -83,6 +83,7 @@
         if (totalEl) {
             totalEl.textContent = formatCurrency(totalAmount);
         }
+        refreshAmountDisplays(totalAmount);
     }
 
     function applyTaxPercent(percent) {

@@ -158,11 +158,23 @@ Public Class _Default
     End Function
 
     Private Function GetModalTaxPercent() As Decimal
+        Dim defaultPercent = Math.Max(0D, Math.Min(100D, TaxRate * 100D))
+        If txtModalTaxPercent Is Nothing Then
+            Return defaultPercent
+        End If
+
         Dim percent As Decimal
         If Decimal.TryParse(txtModalTaxPercent.Text, NumberStyles.Float, CultureInfo.InvariantCulture, percent) Then
             Return Math.Min(Math.Max(percent, 0D), 100D)
         End If
-        Return Math.Max(0D, Math.Min(100D, TaxRate * 100D))
+
+        If Not String.IsNullOrWhiteSpace(hfDefaultTaxPercent.Value) Then
+            If Decimal.TryParse(hfDefaultTaxPercent.Value, NumberStyles.Float, CultureInfo.InvariantCulture, percent) Then
+                Return Math.Min(Math.Max(percent, 0D), 100D)
+            End If
+        End If
+
+        Return defaultPercent
     End Function
 
     Protected Function GetCategoryCss(category As String) As String
@@ -346,8 +358,11 @@ Public Class _Default
         litCashAmountDue.Text = amountDueText
         litCardAmountDue.Text = amountDueText
         ResetPaymentFormState()
-        Dim defaultTaxPercent = If(String.IsNullOrWhiteSpace(hfDefaultTaxPercent.Value), (TaxRate * 100D).ToString(CultureInfo.InvariantCulture), hfDefaultTaxPercent.Value)
-        txtModalTaxPercent.Text = defaultTaxPercent
+        Dim defaultTaxPercentValue = (TaxRate * 100D).ToString(CultureInfo.InvariantCulture)
+        hfDefaultTaxPercent.Value = defaultTaxPercentValue
+        txtModalTaxPercent.Text = defaultTaxPercentValue
+        Dim taxableBase = Math.Max(0D, SubtotalValue - DiscountValue)
+        hfTaxableAmount.Value = taxableBase.ToString(CultureInfo.InvariantCulture)
 
         lblCheckoutError.Text = String.Empty
         hfBaseAmountDue.Value = TotalValue.ToString(CultureInfo.InvariantCulture)

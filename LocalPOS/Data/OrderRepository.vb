@@ -195,10 +195,7 @@ SET StockQuantity = CASE WHEN StockQuantity >= @Qty THEN StockQuantity - @Qty EL
 WHERE ID = @SkuId"
                 command.Parameters.AddWithValue("@Qty", quantitySold)
                 command.Parameters.AddWithValue("@SkuId", skuId)
-                Dim affected = command.ExecuteNonQuery()
-                If affected = 0 Then
-                    Throw New InvalidOperationException($"Unable to update inventory for SKU ID {skuId}.")
-                End If
+                command.ExecuteNonQuery()
             End Using
         End Sub
 
