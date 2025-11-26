@@ -1,4 +1,4 @@
-<%@ Page Title="Customer Profile" Language="VB" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="CustomerProfile.aspx.vb" Inherits="CustomerProfile" %>
+<%@ Page Title="Customer Profile" Language="VB" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="CustomerProfile.aspx.vb" Inherits="LocalPOS.CustomerProfile" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <div class="customer-profile-shell">
