@@ -2,8 +2,9 @@ Imports System.Configuration
 Imports System.Globalization
 Imports System.Collections.Generic
 Imports System.Linq
-Imports LocalPOS.Models
-Imports LocalPOS.Services
+Imports LocalPOS.LocalPOS.Models
+Imports LocalPOS.LocalPOS.Services
+
 
 Public Class _Default
     Inherits Page
@@ -247,9 +248,9 @@ Public Class _Default
     Private Sub UpdatePaymentAvailability()
         Dim isDealer = ddlCustomers.SelectedValue IsNot Nothing AndAlso Not ddlCustomers.SelectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
         Dim credit = rblPaymentMethod.Items.FindByValue("Credit")
-        Dim partial = rblPaymentMethod.Items.FindByValue("Partial")
+        Dim partial_v = rblPaymentMethod.Items.FindByValue("Partial")
         If credit IsNot Nothing Then credit.Enabled = isDealer
-        If partial IsNot Nothing Then partial.Enabled = isDealer
+        If partial_v IsNot Nothing Then partial_v.Enabled = isDealer
 
         If Not isDealer AndAlso (rblPaymentMethod.SelectedValue = "Credit" OrElse rblPaymentMethod.SelectedValue = "Partial") Then
             rblPaymentMethod.SelectedValue = "Cash"

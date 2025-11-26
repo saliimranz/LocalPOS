@@ -1,5 +1,5 @@
-Imports LocalPOS.Data
-Imports LocalPOS.Models
+Imports LocalPOS.LocalPOS.Data
+Imports LocalPOS.LocalPOS.Models
 
 Namespace LocalPOS.Services
     Public Class PosService

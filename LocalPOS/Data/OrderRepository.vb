@@ -1,5 +1,5 @@
 Imports System.Data.SqlClient
-Imports LocalPOS.Models
+Imports LocalPOS.LocalPOS.Models
 
 Namespace LocalPOS.Data
     Public Class OrderRepository
