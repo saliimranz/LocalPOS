@@ -16,155 +16,279 @@ Partial Public Class _Default
     '''<summary>
     '''litDate control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litDate As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''litTime control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litTime As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''lblCashierName control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents lblCashierName As Global.System.Web.UI.WebControls.Label
 
     '''<summary>
     '''upPos control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents upPos As Global.System.Web.UI.UpdatePanel
 
     '''<summary>
     '''hfSelectedCategory control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents hfSelectedCategory As Global.System.Web.UI.WebControls.HiddenField
 
     '''<summary>
     '''txtSearch control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents txtSearch As Global.System.Web.UI.WebControls.TextBox
 
     '''<summary>
     '''btnSearch control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnSearch As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
     '''btnAllCategories control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnAllCategories As Global.System.Web.UI.WebControls.LinkButton
 
     '''<summary>
     '''rptCategories control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents rptCategories As Global.System.Web.UI.WebControls.Repeater
 
     '''<summary>
     '''lblCatalogEmpty control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents lblCatalogEmpty As Global.System.Web.UI.WebControls.Label
 
     '''<summary>
     '''rptProducts control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents rptProducts As Global.System.Web.UI.WebControls.Repeater
 
     '''<summary>
     '''ddlCustomers control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents ddlCustomers As Global.System.Web.UI.WebControls.DropDownList
 
     '''<summary>
     '''litCartCount control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litCartCount As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''btnClearCart control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnClearCart As Global.System.Web.UI.WebControls.LinkButton
 
     '''<summary>
     '''rptCart control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents rptCart As Global.System.Web.UI.WebControls.Repeater
 
     '''<summary>
     '''pnlEmptyCart control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents pnlEmptyCart As Global.System.Web.UI.WebControls.Panel
 
     '''<summary>
     '''txtDiscount control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents txtDiscount As Global.System.Web.UI.WebControls.TextBox
 
     '''<summary>
     '''litSubtotal control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litSubtotal As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''litTaxRate control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litTaxRate As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''litTax control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litTax As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''litTotal control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litTotal As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''lblCartMessage control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents lblCartMessage As Global.System.Web.UI.WebControls.Label
 
     '''<summary>
     '''btnHold control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnHold As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
     '''btnNewSale control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnNewSale As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
     '''btnCheckout control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnCheckout As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
     '''litModalTotal control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents litModalTotal As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''rblPaymentMethod control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents rblPaymentMethod As Global.System.Web.UI.WebControls.RadioButtonList
 
     '''<summary>
     '''txtPartialAmount control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents txtPartialAmount As Global.System.Web.UI.WebControls.TextBox
 
     '''<summary>
     '''lblCheckoutError control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents lblCheckoutError As Global.System.Web.UI.WebControls.Label
 
     '''<summary>
     '''btnCancelPayment control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnCancelPayment As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
     '''btnCompletePayment control.
     '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
     Protected WithEvents btnCompletePayment As Global.System.Web.UI.WebControls.Button
 End Class

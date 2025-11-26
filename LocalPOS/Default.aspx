@@ -5,7 +5,7 @@
         <div class="pos-header">
             <div>
                 <div class="terminal-name">POS Terminal</div>
-                <div class="location-info">Main Branch · Register #01</div>
+                <div class="location-info">Main Branch Register #01</div>
             </div>
             <div class="datetime text-end">
                 <div id="currentDate"><asp:Literal ID="litDate" runat="server"></asp:Literal></div>
