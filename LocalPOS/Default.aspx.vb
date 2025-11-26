@@ -157,6 +157,10 @@ Public Class _Default
         BindProducts()
     End Sub
 
+    Protected Sub txtSearch_TextChanged(sender As Object, e As EventArgs)
+        BindProducts()
+    End Sub
+
     Protected Sub btnAllCategories_Click(sender As Object, e As EventArgs)
         hfSelectedCategory.Value = String.Empty
         BindProducts()
@@ -246,14 +250,28 @@ Public Class _Default
     End Sub
 
     Private Sub UpdatePaymentAvailability()
-        Dim isDealer = ddlCustomers.SelectedValue IsNot Nothing AndAlso Not ddlCustomers.SelectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
-        Dim credit = rblPaymentMethod.Items.FindByValue("Credit")
-        Dim partial_v = rblPaymentMethod.Items.FindByValue("Partial")
-        If credit IsNot Nothing Then credit.Enabled = isDealer
-        If partial_v IsNot Nothing Then partial_v.Enabled = isDealer
+        Dim selectedValue = If(ddlCustomers.SelectedItem IsNot Nothing, ddlCustomers.SelectedValue, String.Empty)
+        Dim isCorporateCustomer = Not String.IsNullOrWhiteSpace(selectedValue) AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
 
-        If Not isDealer AndAlso (rblPaymentMethod.SelectedValue = "Credit" OrElse rblPaymentMethod.SelectedValue = "Partial") Then
+        TogglePaymentOption("Credit", isCorporateCustomer)
+        TogglePaymentOption("Partial", isCorporateCustomer)
+
+        If Not isCorporateCustomer AndAlso (rblPaymentMethod.SelectedValue = "Credit" OrElse rblPaymentMethod.SelectedValue = "Partial") Then
             rblPaymentMethod.SelectedValue = "Cash"
+        End If
+    End Sub
+
+    Private Sub TogglePaymentOption(value As String, isVisible As Boolean)
+        Dim optionItem = rblPaymentMethod.Items.FindByValue(value)
+        If optionItem Is Nothing Then
+            Return
+        End If
+
+        optionItem.Enabled = isVisible
+        If isVisible Then
+            optionItem.Attributes.Remove("data-hidden")
+        Else
+            optionItem.Attributes("data-hidden") = "true"
         End If
     End Sub
 

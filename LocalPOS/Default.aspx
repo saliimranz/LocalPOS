@@ -27,9 +27,16 @@
                     <div>
                         <div class="pos-search-bar">
                             <div class="search-input">
-                                <asp:TextBox runat="server" ID="txtSearch" CssClass="form-control border-0 bg-transparent" placeholder="Search products or scan barcode..." AutoPostBack="false"></asp:TextBox>
+                                <asp:TextBox runat="server"
+                                    ID="txtSearch"
+                                    CssClass="form-control border-0 bg-transparent"
+                                    placeholder="Search products or scan barcode..."
+                                    TextMode="Search"
+                                    AutoPostBack="true"
+                                    OnTextChanged="txtSearch_TextChanged"
+                                    aria-label="Search products"></asp:TextBox>
                             </div>
-                            <asp:Button runat="server" ID="btnSearch" Text="Search" CssClass="btn btn-outline-secondary" OnClick="btnSearch_Click" />
+                            <asp:Button runat="server" ID="btnSearch" Text="Search" CssClass="btn btn-outline-secondary search-btn" OnClick="btnSearch_Click" />
                             <button type="button" class="scan-btn">Scan</button>
                         </div>
 
@@ -48,27 +55,31 @@
                         </div>
 
                         <asp:Label runat="server" ID="lblCatalogEmpty" CssClass="text-muted" Visible="False">No products found for the selected filters.</asp:Label>
-                        <asp:Repeater runat="server" ID="rptProducts">
-                            <ItemTemplate>
-                                <div class="product-card">
-                                    <span class="price-tag"><%# Eval("UnitPrice", "{0:C}") %></span>
-                                    <asp:Image runat="server" ImageUrl='<%# GetProductImage(Eval("ImageUrl")) %>' AlternateText='<%# Eval("DisplayName") %>' />
-                                    <div class="card-body">
-                                        <strong><%# Eval("DisplayName") %></strong>
-                                        <small class="text-muted"><%# Eval("Category") %></small>
-                                        <small class="text-muted">SKU: <%# Eval("SkuCode") %></small>
-                                    </div>
-                                    <div class="card-footer">
+                        <div class="product-grid">
+                            <asp:Repeater runat="server" ID="rptProducts">
+                                <ItemTemplate>
+                                    <div class="product-card">
+                                        <div class="product-thumb">
+                                            <asp:Image runat="server" CssClass="product-thumb-img" ImageUrl='<%# GetProductImage(Eval("ImageUrl")) %>' AlternateText='<%# Eval("DisplayName") %>' />
+                                            <span class="product-price-chip"><%# Eval("UnitPrice", "{0:C}") %></span>
+                                        </div>
+                                        <div class="product-info">
+                                            <div class="product-name"><%# Eval("DisplayName") %></div>
+                                            <div class="product-meta">
+                                                <small><%# Eval("Category") %></small>
+                                                <small>SKU: <%# Eval("SkuCode") %></small>
+                                            </div>
+                                        </div>
                                         <asp:Button runat="server"
-                                            CssClass="btn btn-light w-100"
+                                            CssClass="btn btn-light btn-add-to-cart"
                                             CommandName="AddToCart"
                                             CommandArgument='<%# Eval("Id") %>'
                                             Text="Add to cart"
                                             OnCommand="Product_Command" />
                                     </div>
-                                </div>
-                            </ItemTemplate>
-                        </asp:Repeater>
+                                </ItemTemplate>
+                            </asp:Repeater>
+                        </div>
                     </div>
 
                     <div class="cart-panel">

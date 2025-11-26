@@ -35,17 +35,44 @@
             }
         }
 
-        paymentList.addEventListener('change', function (event) {
-            var target = event.target;
-            if (!target || target.type !== 'radio') {
+        function refreshPartialFromSelection() {
+            var checked = paymentList.querySelector('input[type="radio"]:checked');
+            if (!checked || checked.dataset.hidden === 'true') {
+                togglePartial('');
                 return;
             }
-            togglePartial(target.value);
-        });
-
-        var checked = paymentList.querySelector('input[type="radio"]:checked');
-        if (checked) {
             togglePartial(checked.value);
+        }
+
+        if (paymentList.dataset.posPaymentWired !== 'true') {
+            paymentList.addEventListener('change', function (event) {
+                var target = event.target;
+                if (!target || target.type !== 'radio') {
+                    return;
+                }
+                togglePartial(target.value);
+            });
+            paymentList.dataset.posPaymentWired = 'true';
+        }
+
+        refreshPartialFromSelection();
+    }
+
+    var ajaxHandlersAttached = false;
+
+    function attachAjaxHandlers() {
+        if (ajaxHandlersAttached) {
+            return;
+        }
+        if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
+            var manager = Sys.WebForms.PageRequestManager.getInstance();
+            if (!manager) {
+                return;
+            }
+            manager.add_endRequest(function () {
+                wirePaymentOptions();
+            });
+            ajaxHandlersAttached = true;
         }
     }
 
@@ -73,5 +100,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         keepClockUpdated();
         wirePaymentOptions();
+        attachAjaxHandlers();
     });
 })();
