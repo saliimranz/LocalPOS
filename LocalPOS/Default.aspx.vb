@@ -2,6 +2,7 @@ Imports System.Configuration
 Imports System.Globalization
 Imports System.Collections.Generic
 Imports System.Linq
+Imports System.Web.UI.WebControls
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
@@ -253,25 +254,41 @@ Public Class _Default
         Dim selectedValue = If(ddlCustomers.SelectedItem IsNot Nothing, ddlCustomers.SelectedValue, String.Empty)
         Dim isCorporateCustomer = Not String.IsNullOrWhiteSpace(selectedValue) AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
 
-        TogglePaymentOption("Credit", isCorporateCustomer)
-        TogglePaymentOption("Partial", isCorporateCustomer)
+        If isCorporateCustomer Then
+            EnsureCorporatePaymentOptions()
+        Else
+            RemoveCorporatePaymentOptions()
+        End If
 
         If Not isCorporateCustomer AndAlso (rblPaymentMethod.SelectedValue = "Credit" OrElse rblPaymentMethod.SelectedValue = "Partial") Then
             rblPaymentMethod.SelectedValue = "Cash"
         End If
     End Sub
 
-    Private Sub TogglePaymentOption(value As String, isVisible As Boolean)
-        Dim optionItem = rblPaymentMethod.Items.FindByValue(value)
-        If optionItem Is Nothing Then
+    Private Sub EnsureCorporatePaymentOptions()
+        EnsurePaymentOption("Credit", "Credit Account", 2)
+        EnsurePaymentOption("Partial", "Partial Payment", 3)
+    End Sub
+
+    Private Sub RemoveCorporatePaymentOptions()
+        RemovePaymentOption("Credit")
+        RemovePaymentOption("Partial")
+    End Sub
+
+    Private Sub EnsurePaymentOption(value As String, text As String, desiredIndex As Integer)
+        If rblPaymentMethod.Items.FindByValue(value) IsNot Nothing Then
             Return
         End If
 
-        optionItem.Enabled = isVisible
-        If isVisible Then
-            optionItem.Attributes.Remove("data-hidden")
-        Else
-            optionItem.Attributes("data-hidden") = "true"
+        Dim item As New ListItem(text, value)
+        Dim insertIndex = Math.Max(0, Math.Min(desiredIndex, rblPaymentMethod.Items.Count))
+        rblPaymentMethod.Items.Insert(insertIndex, item)
+    End Sub
+
+    Private Sub RemovePaymentOption(value As String)
+        Dim item = rblPaymentMethod.Items.FindByValue(value)
+        If item IsNot Nothing Then
+            rblPaymentMethod.Items.Remove(item)
         End If
     End Sub
 

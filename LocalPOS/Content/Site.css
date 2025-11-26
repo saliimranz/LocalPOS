@@ -360,11 +360,6 @@
     gap: 12px;
 }
 
-.payment-options input[data-hidden='true'],
-.payment-options input[data-hidden='true'] + label {
-    display: none !important;
-}
-
 .modal-pos .payment-radio input {
     margin-right: 8px;
 }
