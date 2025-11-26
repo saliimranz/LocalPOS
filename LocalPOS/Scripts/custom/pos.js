@@ -47,11 +47,59 @@
         return symbol ? symbol + ' ' + formatted : formatted;
     }
 
+    function clamp(value, min, max) {
+        if (!isFinite(value)) {
+            return min;
+        }
+        return Math.min(Math.max(value, min), max);
+    }
+
     function refreshAmountDisplays(amount) {
         var formatted = formatCurrency(amount);
         document.querySelectorAll('[data-amount-due-display]').forEach(function (node) {
             node.textContent = formatted;
         });
+    }
+
+    function getTaxInput() {
+        return document.getElementById('txtModalTaxPercent');
+    }
+
+    function getDefaultTaxPercent() {
+        var field = document.getElementById('hfDefaultTaxPercent');
+        return field ? parseDecimal(field.value) : 0;
+    }
+
+    function getTaxableAmount() {
+        return Math.max(0, getHiddenDecimal('hfTaxableAmount'));
+    }
+
+    function updateTaxSummaryDisplays(taxAmount, totalAmount) {
+        var taxEl = document.getElementById('litModalTax');
+        if (taxEl) {
+            taxEl.textContent = formatCurrency(taxAmount);
+        }
+        var totalEl = document.getElementById('litModalTotal');
+        if (totalEl) {
+            totalEl.textContent = formatCurrency(totalAmount);
+        }
+    }
+
+    function applyTaxPercent(percent) {
+        var taxable = getTaxableAmount();
+        var normalized = clamp(percent, 0, 100);
+
+        var input = getTaxInput();
+        if (input) {
+            input.value = normalized % 1 === 0 ? normalized.toString() : normalized.toFixed(2);
+        }
+
+        var taxAmount = taxable * (normalized / 100);
+        var total = taxable + taxAmount;
+        setHiddenDecimal('hfBaseAmountDue', total);
+        updateTaxSummaryDisplays(taxAmount, total);
+        updateAmountDueFromInputs();
+        return normalized;
     }
 
     function getSelectedPaymentMethod() {
@@ -97,9 +145,6 @@
 
     function updateAmountDueFromInputs() {
         var baseAmount = getHiddenDecimal('hfBaseAmountDue');
-        if (baseAmount <= 0) {
-            baseAmount = getHiddenDecimal('hfAmountDue');
-        }
         var isCorporateField = document.getElementById('hfIsCorporateCustomer');
         var amount = baseAmount;
 
@@ -111,7 +156,7 @@
                 if (selected && selected.value === 'Partial' && partialInput) {
                     var partialValue = parseDecimal(partialInput.value);
                     if (partialValue > 0) {
-                        amount = partialValue;
+                        amount = Math.min(partialValue, baseAmount);
                     }
                 }
             }
@@ -146,6 +191,22 @@
         }
 
         toggleCorporatePartialInput();
+    }
+
+    function setupTaxInput() {
+        var input = getTaxInput();
+        if (!input) {
+            return;
+        }
+        if (input.dataset.wired === 'true') {
+            return;
+        }
+        input.addEventListener('input', function () {
+            var raw = input.value;
+            var percent = raw === '' ? getDefaultTaxPercent() : parseDecimal(raw);
+            applyTaxPercent(percent);
+        });
+        input.dataset.wired = 'true';
     }
 
     function updateCashChange() {
@@ -260,10 +321,11 @@
             showPaymentPanel(getSelectedPaymentMethod());
         }
 
+        setupTaxInput();
         setupCorporateOptions();
-        updateAmountDueFromInputs();
         setupCashInput();
         setupNumericKeypad();
+        updateAmountDueFromInputs();
     }
 
     var ajaxHandlersAttached = false;
@@ -285,7 +347,14 @@
     }
 
     function synchronizePaymentUi() {
-        updateAmountDueFromInputs();
+        var currentPercent = 0;
+        var input = getTaxInput();
+        if (input && input.value.trim() !== '') {
+            currentPercent = parseDecimal(input.value);
+        } else {
+            currentPercent = getDefaultTaxPercent();
+        }
+        applyTaxPercent(currentPercent);
         showPaymentPanel(getSelectedPaymentMethod());
         updateCashChange();
     }
@@ -306,9 +375,10 @@
                 return;
             }
             var modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) {
-                modal.hide();
+            if (!modal) {
+                modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             }
+            modal.hide();
         }
     };
 

@@ -167,27 +167,40 @@
                                     <div>
                                         <small class="text-muted">Subtotal</small>
                                         <div class="fw-bold">
-                                            <asp:Literal runat="server" ID="litModalSubtotal"></asp:Literal>
+                                            <asp:Literal runat="server" ID="litModalSubtotal" ClientIDMode="Static"></asp:Literal>
                                         </div>
                                     </div>
                                     <div>
                                         <small class="text-muted">Discount</small>
                                         <div class="fw-bold text-success">
-                                            <asp:Literal runat="server" ID="litModalDiscount"></asp:Literal>
+                                            <asp:Literal runat="server" ID="litModalDiscount" ClientIDMode="Static"></asp:Literal>
                                         </div>
                                     </div>
                                     <div>
                                         <small class="text-muted">VAT</small>
                                         <div class="fw-bold">
-                                            <asp:Literal runat="server" ID="litModalTax"></asp:Literal>
+                                            <asp:Literal runat="server" ID="litModalTax" ClientIDMode="Static"></asp:Literal>
                                         </div>
                                     </div>
                                     <div>
                                         <small class="text-muted">Total Due</small>
-                                        <div class="fw-bold text-dark" data-amount-due-display="true">
+                                        <div class="fw-bold text-dark">
                                             <asp:Literal runat="server" ID="litModalTotal" ClientIDMode="Static"></asp:Literal>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div class="tax-adjuster">
+                                    <label for="txtModalTaxPercent" class="form-label fw-semibold">VAT %</label>
+                                    <asp:TextBox runat="server"
+                                        ID="txtModalTaxPercent"
+                                        ClientIDMode="Static"
+                                        CssClass="form-control tax-percent-input"
+                                        TextMode="Number"
+                                        step="0.1"
+                                        min="0"
+                                        max="100"></asp:TextBox>
+                                    <small class="text-muted">Default 5%. Update only if VAT changes.</small>
                                 </div>
 
                                 <div class="payment-methods">
@@ -311,6 +324,8 @@
                 <asp:HiddenField runat="server" ID="hfBaseAmountDue" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfCurrencySymbol" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfIsCorporateCustomer" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfTaxableAmount" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfDefaultTaxPercent" ClientIDMode="Static" />
             </ContentTemplate>
         </asp:UpdatePanel>
     </div>

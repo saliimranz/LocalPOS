@@ -45,6 +45,7 @@ Namespace LocalPOS.Data
         Private Shared Function InsertOrder(connection As SqlConnection, transaction As SqlTransaction, request As CheckoutRequest, orderNumber As String, inquiryNo As String, outstanding As Decimal) As Integer
             Using command = connection.CreateCommand()
                 command.Transaction = transaction
+                Dim orderStatus = If(outstanding > 0D, "Pending Payment", "Completed")
                 command.CommandText =
 "INSERT INTO dbo.TBL_SP_PSO_ORDER
 (
@@ -72,7 +73,7 @@ VALUES
     'POS',
     @Contact,
     1,
-    'Completed',
+    @OrderStatus,
     GETDATE(),
     'Retail',
     @TotalDue,
@@ -85,6 +86,7 @@ VALUES
                 command.Parameters.AddWithValue("@OrderNumber", orderNumber)
                 command.Parameters.AddWithValue("@DealerId", If(request.DealerId = 0, CType(DBNull.Value, Object), request.DealerId))
                 command.Parameters.AddWithValue("@Contact", request.DealerName)
+                command.Parameters.AddWithValue("@OrderStatus", orderStatus)
                 command.Parameters.AddWithValue("@TotalDue", request.TotalDue)
                 command.Parameters.AddWithValue("@Outstanding", outstanding)
                 command.Parameters.AddWithValue("@UserId", request.CreatedBy)
@@ -209,6 +211,8 @@ WHERE ID = @SkuId"
                 notes.Add($"Type:{request.CorporatePaymentType}")
             End If
 
+            notes.Add($"VAT:{request.TaxPercent.ToString("F2", CultureInfo.InvariantCulture)}%")
+            notes.Add($"Total:{request.TotalDue.ToString("F2", CultureInfo.InvariantCulture)}")
             notes.Add($"Paid:{request.PaymentAmount.ToString("F2", CultureInfo.InvariantCulture)}")
 
             If outstanding > 0D Then

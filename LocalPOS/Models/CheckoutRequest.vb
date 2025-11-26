@@ -11,6 +11,7 @@ Namespace LocalPOS.Models
         Public Property CardRrn As String
         Public Property CardAuthCode As String
         Public Property CardStatus As String
+        Public Property TaxPercent As Decimal
         Public Property DiscountPercent As Decimal
         Public Property Subtotal As Decimal
         Public Property TaxAmount As Decimal

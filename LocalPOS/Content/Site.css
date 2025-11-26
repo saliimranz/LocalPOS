@@ -379,6 +379,17 @@
     margin-bottom: 24px;
 }
 
+.tax-adjuster {
+    margin-bottom: 20px;
+}
+
+.tax-percent-input {
+    border-radius: 16px;
+    border: 2px solid #dad1ff;
+    font-size: 18px;
+    padding: 12px 16px;
+}
+
 .payment-methods {
     margin-bottom: 16px;
 }

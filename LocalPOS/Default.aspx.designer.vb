@@ -284,6 +284,15 @@ Partial Public Class _Default
     Protected WithEvents litModalTotal As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
+    '''txtModalTaxPercent control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents txtModalTaxPercent As Global.System.Web.UI.WebControls.TextBox
+
+    '''<summary>
     '''rblPaymentMethod control.
     '''</summary>
     '''<remarks>
@@ -444,4 +453,22 @@ Partial Public Class _Default
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
     Protected WithEvents hfIsCorporateCustomer As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfTaxableAmount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfTaxableAmount As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfDefaultTaxPercent control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfDefaultTaxPercent As Global.System.Web.UI.WebControls.HiddenField
 End Class

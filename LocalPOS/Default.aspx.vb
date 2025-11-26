@@ -21,7 +21,7 @@ Public Class _Default
             If Decimal.TryParse(configured, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) Then
                 Return parsed
             End If
-            Return 0.1D
+            Return 0.05D
         End Get
     End Property
 
@@ -133,6 +133,8 @@ Public Class _Default
         litTotal.Text = total.ToString("C", CultureInfo.CurrentCulture)
         hfBaseAmountDue.Value = total.ToString(CultureInfo.InvariantCulture)
         hfAmountDue.Value = hfBaseAmountDue.Value
+        hfTaxableAmount.Value = taxable.ToString(CultureInfo.InvariantCulture)
+        hfDefaultTaxPercent.Value = (TaxRate * 100D).ToString(CultureInfo.InvariantCulture)
     End Sub
 
     Private Function GetCart() As List(Of CartItem)
@@ -153,6 +155,14 @@ Public Class _Default
         End If
         txtDiscount.Text = percent.ToString(CultureInfo.InvariantCulture)
         Return percent
+    End Function
+
+    Private Function GetModalTaxPercent() As Decimal
+        Dim percent As Decimal
+        If Decimal.TryParse(txtModalTaxPercent.Text, NumberStyles.Float, CultureInfo.InvariantCulture, percent) Then
+            Return Math.Min(Math.Max(percent, 0D), 100D)
+        End If
+        Return Math.Max(0D, Math.Min(100D, TaxRate * 100D))
     End Function
 
     Protected Function GetCategoryCss(category As String) As String
@@ -336,6 +346,8 @@ Public Class _Default
         litCashAmountDue.Text = amountDueText
         litCardAmountDue.Text = amountDueText
         ResetPaymentFormState()
+        Dim defaultTaxPercent = If(String.IsNullOrWhiteSpace(hfDefaultTaxPercent.Value), (TaxRate * 100D).ToString(CultureInfo.InvariantCulture), hfDefaultTaxPercent.Value)
+        txtModalTaxPercent.Text = defaultTaxPercent
 
         lblCheckoutError.Text = String.Empty
         hfBaseAmountDue.Value = TotalValue.ToString(CultureInfo.InvariantCulture)
@@ -363,6 +375,12 @@ Public Class _Default
             Dim dealerName = If(ddlCustomers.SelectedItem IsNot Nothing, ddlCustomers.SelectedItem.Text, "Walk-in Customer")
             Dim isCorporateCustomer = IsCorporateCustomerSelected()
             Dim corporatePaymentType = If(isCorporateCustomer, rblCorporatePaymentType.SelectedValue, "Full")
+            Dim taxableBase = Math.Max(0D, SubtotalValue - DiscountValue)
+            Dim modalTaxPercent = GetModalTaxPercent()
+            Dim recalculatedTax = Decimal.Round(taxableBase * (modalTaxPercent / 100D), 2, MidpointRounding.AwayFromZero)
+            Dim recalculatedTotal = taxableBase + recalculatedTax
+            TaxValue = recalculatedTax
+            TotalValue = recalculatedTotal
 
             Dim partialAmount As Decimal? = Nothing
             If isCorporateCustomer AndAlso String.Equals(corporatePaymentType, "Partial", StringComparison.OrdinalIgnoreCase) Then
@@ -371,7 +389,7 @@ Public Class _Default
                     lblCheckoutError.Text = "Enter a valid partial amount."
                     Return
                 End If
-                If parsed > TotalValue Then
+                If parsed > recalculatedTotal Then
                     lblCheckoutError.Text = "Partial amount cannot exceed total due."
                     Return
                 End If
@@ -380,7 +398,7 @@ Public Class _Default
                 corporatePaymentType = "Full"
             End If
 
-            Dim paymentAmount = If(partialAmount.HasValue, partialAmount.Value, TotalValue)
+            Dim paymentAmount = If(partialAmount.HasValue, partialAmount.Value, recalculatedTotal)
             If paymentAmount <= 0D Then
                 lblCheckoutError.Text = "Payment amount must be greater than zero."
                 Return
@@ -393,10 +411,11 @@ Public Class _Default
                 .PaymentAmount = paymentAmount,
                 .PartialAmount = partialAmount,
                 .CorporatePaymentType = corporatePaymentType,
+                .TaxPercent = modalTaxPercent,
+                .TaxAmount = recalculatedTax,
+                .TotalDue = recalculatedTotal,
                 .DiscountPercent = GetDiscountPercent(),
                 .Subtotal = SubtotalValue,
-                .TaxAmount = TaxValue,
-                .TotalDue = TotalValue,
                 .CartItems = cart.Select(Function(ci) ci.Clone()).ToList(),
                 .CreatedBy = lblCashierName.Text
             }
@@ -462,6 +481,10 @@ Public Class _Default
         litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
         hfBaseAmountDue.Value = "0"
         hfAmountDue.Value = "0"
+        Dim defaultTaxPercent = If(String.IsNullOrWhiteSpace(hfDefaultTaxPercent.Value), (TaxRate * 100D).ToString(CultureInfo.InvariantCulture), hfDefaultTaxPercent.Value)
+        If txtModalTaxPercent IsNot Nothing Then
+            txtModalTaxPercent.Text = defaultTaxPercent
+        End If
     End Sub
 
     Private Sub ShowCartMessage(message As String, success As Boolean)
