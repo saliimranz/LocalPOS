@@ -179,13 +179,13 @@
                                     <div>
                                         <small class="text-muted">VAT</small>
                                         <div class="fw-bold">
-                                            <asp:Literal runat="server" ID="litModalTax" ClientIDMode="Static"></asp:Literal>
+                                            <span id="modalVatDisplay" data-payment-summary="vat"><asp:Literal runat="server" ID="litModalTax" ClientIDMode="Static"></asp:Literal></span>
                                         </div>
                                     </div>
                                     <div>
                                         <small class="text-muted">Total Due</small>
                                         <div class="fw-bold text-dark">
-                                            <asp:Literal runat="server" ID="litModalTotal" ClientIDMode="Static"></asp:Literal>
+                                            <span id="modalTotalDisplay" data-payment-summary="total"><asp:Literal runat="server" ID="litModalTotal" ClientIDMode="Static"></asp:Literal></span>
                                         </div>
                                     </div>
                                 </div>
