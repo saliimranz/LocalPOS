@@ -2,6 +2,7 @@ Imports System.Configuration
 Imports System.Globalization
 Imports System.Collections.Generic
 Imports System.Linq
+Imports System.Web.UI.WebControls
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
@@ -157,6 +158,10 @@ Public Class _Default
         BindProducts()
     End Sub
 
+    Protected Sub txtSearch_TextChanged(sender As Object, e As EventArgs)
+        BindProducts()
+    End Sub
+
     Protected Sub btnAllCategories_Click(sender As Object, e As EventArgs)
         hfSelectedCategory.Value = String.Empty
         BindProducts()
@@ -246,14 +251,44 @@ Public Class _Default
     End Sub
 
     Private Sub UpdatePaymentAvailability()
-        Dim isDealer = ddlCustomers.SelectedValue IsNot Nothing AndAlso Not ddlCustomers.SelectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
-        Dim credit = rblPaymentMethod.Items.FindByValue("Credit")
-        Dim partial_v = rblPaymentMethod.Items.FindByValue("Partial")
-        If credit IsNot Nothing Then credit.Enabled = isDealer
-        If partial_v IsNot Nothing Then partial_v.Enabled = isDealer
+        Dim selectedValue = If(ddlCustomers.SelectedItem IsNot Nothing, ddlCustomers.SelectedValue, String.Empty)
+        Dim isCorporateCustomer = Not String.IsNullOrWhiteSpace(selectedValue) AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
 
-        If Not isDealer AndAlso (rblPaymentMethod.SelectedValue = "Credit" OrElse rblPaymentMethod.SelectedValue = "Partial") Then
+        If isCorporateCustomer Then
+            EnsureCorporatePaymentOptions()
+        Else
+            RemoveCorporatePaymentOptions()
+        End If
+
+        If Not isCorporateCustomer AndAlso (rblPaymentMethod.SelectedValue = "Credit" OrElse rblPaymentMethod.SelectedValue = "Partial") Then
             rblPaymentMethod.SelectedValue = "Cash"
+        End If
+    End Sub
+
+    Private Sub EnsureCorporatePaymentOptions()
+        EnsurePaymentOption("Credit", "Credit Account", 2)
+        EnsurePaymentOption("Partial", "Partial Payment", 3)
+    End Sub
+
+    Private Sub RemoveCorporatePaymentOptions()
+        RemovePaymentOption("Credit")
+        RemovePaymentOption("Partial")
+    End Sub
+
+    Private Sub EnsurePaymentOption(value As String, text As String, desiredIndex As Integer)
+        If rblPaymentMethod.Items.FindByValue(value) IsNot Nothing Then
+            Return
+        End If
+
+        Dim item As New ListItem(text, value)
+        Dim insertIndex = Math.Max(0, Math.Min(desiredIndex, rblPaymentMethod.Items.Count))
+        rblPaymentMethod.Items.Insert(insertIndex, item)
+    End Sub
+
+    Private Sub RemovePaymentOption(value As String)
+        Dim item = rblPaymentMethod.Items.FindByValue(value)
+        If item IsNot Nothing Then
+            rblPaymentMethod.Items.Remove(item)
         End If
     End Sub
 
