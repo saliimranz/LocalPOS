@@ -6,49 +6,48 @@ Imports System.Linq
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
-Namespace LocalPOS
-    Public Class CustomerProfile
-        Inherits Page
+Public Partial Class CustomerProfile
+    Inherits Page
 
-        Private ReadOnly _posService As New PosService()
+    Private ReadOnly _posService As New PosService()
 
-        Private ReadOnly Property CustomerId As Integer
-            Get
-                Dim raw = Request.QueryString("customerId")
-                Dim parsed As Integer
-                If Integer.TryParse(raw, parsed) AndAlso parsed >= 0 Then
-                    Return parsed
-                End If
-                Return 0
-            End Get
-        End Property
-
-        Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
-            If Not IsPostBack Then
-                lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
-                hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
-                hfIsCorporateCustomer.Value = "false"
-                LoadCustomer()
+    Private ReadOnly Property CustomerId As Integer
+        Get
+            Dim raw = Request.QueryString("customerId")
+            Dim parsed As Integer
+            If Integer.TryParse(raw, parsed) AndAlso parsed >= 0 Then
+                Return parsed
             End If
-        End Sub
+            Return 0
+        End Get
+    End Property
 
-        Private Sub LoadCustomer()
-            Dim dealer = _posService.GetDealer(CustomerId)
-            If dealer Is Nothing Then
-                lblPageMessage.CssClass = "d-block mb-3 text-danger"
-                lblPageMessage.Text = "Customer not found."
-                upOrders.Visible = False
-                Return
-            End If
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
+        If Not IsPostBack Then
+            lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
+            hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
+            hfIsCorporateCustomer.Value = "false"
+            LoadCustomer()
+        End If
+    End Sub
 
-            litCustomerName.Text = dealer.DealerName
-            litCustomerCode.Text = dealer.DealerCode
-            litCustomerContact.Text = If(String.IsNullOrWhiteSpace(dealer.ContactPerson), "-", dealer.ContactPerson)
-            litCustomerPhone.Text = If(String.IsNullOrWhiteSpace(dealer.CellNumber), "-", dealer.CellNumber)
-            litCustomerCity.Text = If(String.IsNullOrWhiteSpace(dealer.City), "-", dealer.City)
+    Private Sub LoadCustomer()
+        Dim dealer = _posService.GetDealer(CustomerId)
+        If dealer Is Nothing Then
+            lblPageMessage.CssClass = "d-block mb-3 text-danger"
+            lblPageMessage.Text = "Customer not found."
+            upOrders.Visible = False
+            Return
+        End If
 
-            BindOrders()
-        End Sub
+        litCustomerName.Text = dealer.DealerName
+        litCustomerCode.Text = dealer.DealerCode
+        litCustomerContact.Text = If(String.IsNullOrWhiteSpace(dealer.ContactPerson), "-", dealer.ContactPerson)
+        litCustomerPhone.Text = If(String.IsNullOrWhiteSpace(dealer.CellNumber), "-", dealer.CellNumber)
+        litCustomerCity.Text = If(String.IsNullOrWhiteSpace(dealer.City), "-", dealer.City)
+
+        BindOrders()
+    End Sub
 
         Private Sub BindOrders()
             Dim orders = _posService.GetCustomerOrders(CustomerId)
@@ -278,13 +277,12 @@ Namespace LocalPOS
             litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
         End Sub
 
-        Private Function SaveSettlementReceipt(result As PendingPaymentResult) As String
-            Try
-                Dim generator = New ReceiptGenerator(Server.MapPath("~"))
-                Return generator.GenerateSettlementReceipt(result)
-            Catch
-                Return String.Empty
-            End Try
-        End Function
-    End Class
-End Namespace
+    Private Function SaveSettlementReceipt(result As PendingPaymentResult) As String
+        Try
+            Dim generator = New ReceiptGenerator(Server.MapPath("~"))
+            Return generator.GenerateSettlementReceipt(result)
+        Catch
+            Return String.Empty
+        End Try
+    End Function
+End Class
