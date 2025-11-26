@@ -61,6 +61,19 @@
         });
     }
 
+    function cleanupModalArtifacts() {
+        var body = document.body;
+        if (body) {
+            body.classList.remove('modal-open');
+            body.style.removeProperty('padding-right');
+        }
+        document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+            if (backdrop.parentNode) {
+                backdrop.parentNode.removeChild(backdrop);
+            }
+        });
+    }
+
     function getTaxInput() {
         return document.getElementById('txtModalTaxPercent');
     }
@@ -75,11 +88,11 @@
     }
 
     function updateTaxSummaryDisplays(taxAmount, totalAmount) {
-        var taxEl = document.getElementById('litModalTax');
+        var taxEl = document.getElementById('modalVatDisplay');
         if (taxEl) {
             taxEl.textContent = formatCurrency(taxAmount);
         }
-        var totalEl = document.getElementById('litModalTotal');
+        var totalEl = document.getElementById('modalTotalDisplay');
         if (totalEl) {
             totalEl.textContent = formatCurrency(totalAmount);
         }
@@ -342,6 +355,7 @@
             }
             manager.add_endRequest(function () {
                 wirePaymentOptions();
+                cleanupModalArtifacts();
             });
             ajaxHandlersAttached = true;
         }
@@ -372,14 +386,17 @@
         },
         hidePaymentModal: function () {
             var modalEl = document.getElementById('paymentModal');
-            if (!modalEl || typeof bootstrap === 'undefined') {
-                return;
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                var modal = bootstrap.Modal.getInstance(modalEl);
+                if (!modal) {
+                    modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                }
+                modal.hide();
+                if (typeof modal.dispose === 'function') {
+                    modal.dispose();
+                }
             }
-            var modal = bootstrap.Modal.getInstance(modalEl);
-            if (!modal) {
-                modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            }
-            modal.hide();
+            cleanupModalArtifacts();
         }
     };
 
