@@ -151,40 +151,181 @@
                 </div>
 
                 <div class="modal fade modal-pos" id="paymentModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header border-0">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content payment-modal">
+                            <div class="modal-header border-0 align-items-start">
                                 <div>
-                                    <h5 class="modal-title fw-bold">Complete Payment</h5>
-                                    <small>Total Amount</small>
-                                    <div class="fs-4 fw-bold text-dark">
-                                        <asp:Literal runat="server" ID="litModalTotal"></asp:Literal>
+                                    <p class="text-muted mb-1">Amount Due</p>
+                                    <div class="display-6 fw-bold text-dark amount-highlight" data-amount-due-display="true">
+                                        <asp:Literal runat="server" ID="litAmountDueHeader" ClientIDMode="Static"></asp:Literal>
                                     </div>
                                 </div>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <div id="paymentOptions">
-                                    <asp:RadioButtonList runat="server" ID="rblPaymentMethod" CssClass="payment-options" RepeatDirection="Horizontal" RepeatLayout="Flow">
+                                <div class="payment-summary-grid">
+                                    <div>
+                                        <small class="text-muted">Subtotal</small>
+                                        <div class="fw-bold">
+                                            <asp:Literal runat="server" ID="litModalSubtotal" ClientIDMode="Static"></asp:Literal>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">Discount</small>
+                                        <div class="fw-bold text-success">
+                                            <asp:Literal runat="server" ID="litModalDiscount" ClientIDMode="Static"></asp:Literal>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">VAT</small>
+                                        <div class="fw-bold">
+                                            <asp:Literal runat="server" ID="litModalTax" ClientIDMode="Static"></asp:Literal>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">Total Due</small>
+                                        <div class="fw-bold text-dark">
+                                            <asp:Literal runat="server" ID="litModalTotal" ClientIDMode="Static"></asp:Literal>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="tax-adjuster">
+                                    <label for="txtModalTaxPercent" class="form-label fw-semibold">VAT %</label>
+                                    <asp:TextBox runat="server"
+                                        ID="txtModalTaxPercent"
+                                        ClientIDMode="Static"
+                                        CssClass="form-control tax-percent-input"
+                                        TextMode="Number"
+                                        step="0.1"
+                                        min="0"
+                                        max="100"></asp:TextBox>
+                                    <small class="text-muted">Default 5%. Update only if VAT changes.</small>
+                                </div>
+
+                                <div class="payment-methods">
+                                    <label class="form-label fw-semibold">Choose payment method</label>
+                                    <asp:RadioButtonList runat="server"
+                                        ID="rblPaymentMethod"
+                                        ClientIDMode="Static"
+                                        CssClass="payment-method-buttons js-payment-methods"
+                                        RepeatDirection="Horizontal"
+                                        RepeatLayout="Flow">
                                         <asp:ListItem Value="Cash" Selected="True">Cash</asp:ListItem>
                                         <asp:ListItem Value="Card">Card</asp:ListItem>
-                                        <asp:ListItem Value="Credit">Credit Account</asp:ListItem>
-                                        <asp:ListItem Value="Partial">Partial Payment</asp:ListItem>
                                     </asp:RadioButtonList>
                                 </div>
-                                <div id="partialAmountWrapper" class="partial-input d-none">
-                                    <label class="form-label">Partial Amount</label>
-                                    <asp:TextBox runat="server" ID="txtPartialAmount" CssClass="form-control" TextMode="Number" step="0.01"></asp:TextBox>
+
+                                <asp:Panel runat="server" ID="pnlCorporatePayment" ClientIDMode="Static" CssClass="corporate-payment-options d-none">
+                                    <label class="form-label fw-semibold">Corporate payment type</label>
+                                    <asp:RadioButtonList runat="server"
+                                        ID="rblCorporatePaymentType"
+                                        ClientIDMode="Static"
+                                        CssClass="corporate-payment-type js-corporate-type"
+                                        RepeatDirection="Horizontal"
+                                        RepeatLayout="Flow">
+                                        <asp:ListItem Value="Full" Selected="True">Full</asp:ListItem>
+                                        <asp:ListItem Value="Partial">Partial</asp:ListItem>
+                                    </asp:RadioButtonList>
+                                    <div id="corporatePartialWrapper" class="partial-input d-none">
+                                        <label class="form-label">Partial amount</label>
+                                        <asp:TextBox runat="server" ID="txtCorporatePartialAmount" ClientIDMode="Static" CssClass="form-control" TextMode="Number" step="0.01" min="0"></asp:TextBox>
+                                    </div>
+                                </asp:Panel>
+
+                                <div id="cashPaymentPanel" class="payment-panel" data-payment-panel="Cash">
+                                    <div class="panel-header">
+                                        <div>
+                                            <div class="text-muted small">Amount Due</div>
+                                            <div class="fs-4 fw-bold" data-amount-due-display="true">
+                                                <asp:Literal runat="server" ID="litCashAmountDue" ClientIDMode="Static"></asp:Literal>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-muted small">Change to return</div>
+                                            <div class="fs-4 fw-bold text-success" id="cashChangeDisplay">
+                                                <asp:Literal runat="server" ID="litCashChange" ClientIDMode="Static"></asp:Literal>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="cash-input">
+                                        <label for="txtCashReceived" class="form-label fw-semibold">Cash received</label>
+                                        <asp:TextBox runat="server" ID="txtCashReceived" ClientIDMode="Static" CssClass="form-control form-control-lg" TextMode="Number" step="0.01" min="0" placeholder="Enter amount"></asp:TextBox>
+                                    </div>
+
+                                    <div class="quick-buttons">
+                                        <span class="text-muted small">Quick keys</span>
+                                        <div class="quick-buttons-grid">
+                                            <button type="button" class="btn btn-light cash-quick-btn" data-cash-action="add" data-cash-value="10">+10</button>
+                                            <button type="button" class="btn btn-light cash-quick-btn" data-cash-action="add" data-cash-value="20">+20</button>
+                                            <button type="button" class="btn btn-light cash-quick-btn" data-cash-action="add" data-cash-value="50">+50</button>
+                                            <button type="button" class="btn btn-light cash-quick-btn" data-cash-action="add" data-cash-value="100">+100</button>
+                                            <button type="button" class="btn btn-outline-primary cash-quick-btn" data-cash-action="exact">Exact</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="numeric-keypad">
+                                        <button type="button" data-key="7">7</button>
+                                        <button type="button" data-key="8">8</button>
+                                        <button type="button" data-key="9">9</button>
+                                        <button type="button" data-key="clear">C</button>
+                                        <button type="button" data-key="4">4</button>
+                                        <button type="button" data-key="5">5</button>
+                                        <button type="button" data-key="6">6</button>
+                                        <button type="button" data-key="back">DEL</button>
+                                        <button type="button" data-key="1">1</button>
+                                        <button type="button" data-key="2">2</button>
+                                        <button type="button" data-key="3">3</button>
+                                        <button type="button" data-key="." class="dot-key">.</button>
+                                        <button type="button" class="span-two" data-key="0">0</button>
+                                        <button type="button" data-key="00">00</button>
+                                    </div>
                                 </div>
+
+                                <div id="cardPaymentPanel" class="payment-panel d-none" data-payment-panel="Card">
+                                    <div class="panel-header mb-3">
+                                        <div>
+                                            <div class="text-muted small">Amount</div>
+                                            <div class="fs-4 fw-bold" data-amount-due-display="true">
+                                                <asp:Literal runat="server" ID="litCardAmountDue" ClientIDMode="Static"></asp:Literal>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted">Please process the amount on the bank POS terminal and record the reference below.</p>
+
+                                    <div class="mb-3">
+                                        <label for="txtCardRrn" class="form-label fw-semibold">Bank POS receipt no (RRN)</label>
+                                        <asp:TextBox runat="server" ID="txtCardRrn" ClientIDMode="Static" CssClass="form-control" placeholder="Enter RRN"></asp:TextBox>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="txtCardAuthCode" class="form-label fw-semibold">Auth code (optional)</label>
+                                        <asp:TextBox runat="server" ID="txtCardAuthCode" ClientIDMode="Static" CssClass="form-control" placeholder="Enter authorization code"></asp:TextBox>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="ddlCardStatus" class="form-label fw-semibold">Payment status</label>
+                                        <asp:DropDownList runat="server" ID="ddlCardStatus" ClientIDMode="Static" CssClass="form-select">
+                                            <asp:ListItem Text="Approved" Value="Approved" Selected="True"></asp:ListItem>
+                                            <asp:ListItem Text="Declined" Value="Declined"></asp:ListItem>
+                                        </asp:DropDownList>
+                                    </div>
+                                </div>
+
                                 <asp:Label runat="server" ID="lblCheckoutError" CssClass="text-danger mt-3 d-block"></asp:Label>
                             </div>
                             <div class="modal-footer border-0">
                                 <asp:Button runat="server" ID="btnCancelPayment" CssClass="btn btn-outline-secondary" Text="Cancel" CausesValidation="false" OnClientClick="PosUI.hidePaymentModal(); return false;" />
-                                <asp:Button runat="server" ID="btnCompletePayment" CssClass="btn btn-success" Text="Complete &amp; Print" OnClick="btnCompletePayment_Click" />
+                                <asp:Button runat="server" ID="btnCompletePayment" CssClass="btn btn-success" Text="Complete Sale" OnClick="btnCompletePayment_Click" />
                             </div>
                         </div>
                     </div>
                 </div>
+                <asp:HiddenField runat="server" ID="hfAmountDue" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfBaseAmountDue" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfCurrencySymbol" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfIsCorporateCustomer" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfTaxableAmount" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfDefaultTaxPercent" ClientIDMode="Static" />
             </ContentTemplate>
         </asp:UpdatePanel>
     </div>

@@ -368,6 +368,148 @@
     margin-top: 12px;
 }
 
+.payment-modal {
+    padding: 8px 8px 16px;
+}
+
+.payment-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.tax-adjuster {
+    margin-bottom: 20px;
+}
+
+.tax-percent-input {
+    border-radius: 16px;
+    border: 2px solid #dad1ff;
+    font-size: 18px;
+    padding: 12px 16px;
+}
+
+.payment-methods {
+    margin-bottom: 16px;
+}
+
+.payment-method-buttons input[type="radio"],
+.corporate-payment-type input[type="radio"] {
+    display: none;
+}
+
+.payment-method-buttons label,
+.corporate-payment-type label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: 16px;
+    border: 1px solid #d9cff4;
+    margin-right: 12px;
+    font-weight: 600;
+    background: #fff;
+    cursor: pointer;
+    min-width: 120px;
+    transition: all 0.2s ease;
+}
+
+.payment-method-buttons input[type="radio"]:checked + label,
+.corporate-payment-type input[type="radio"]:checked + label {
+    background: #6c2bff;
+    color: #fff;
+    border-color: #6c2bff;
+    box-shadow: 0 10px 20px rgba(108, 43, 255, 0.25);
+}
+
+.corporate-payment-options {
+    margin-bottom: 16px;
+    padding: 16px;
+    border-radius: 18px;
+    background: #f6f3ff;
+    border: 1px solid #e5dcff;
+}
+
+.payment-panel {
+    border: 1px solid #ede6ff;
+    border-radius: 20px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px #f6f1ff;
+}
+
+.payment-panel + .payment-panel {
+    margin-top: 20px;
+}
+
+.payment-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.payment-panel .panel-header > div {
+    flex: 1;
+}
+
+.cash-input .form-control {
+    font-size: 28px;
+    height: auto;
+    padding: 18px 16px;
+    border-radius: 18px;
+    border: 2px solid #dad1ff;
+}
+
+.quick-buttons {
+    margin: 18px 0;
+}
+
+.quick-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.quick-buttons-grid .btn {
+    border-radius: 14px;
+    font-weight: 600;
+}
+
+.numeric-keypad {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(70px, 1fr));
+    gap: 10px;
+}
+
+.numeric-keypad button {
+    border: none;
+    background: #f4f1ff;
+    border-radius: 18px;
+    font-size: 20px;
+    font-weight: 600;
+    padding: 16px 0;
+    transition: background 0.15s ease;
+}
+
+.numeric-keypad button:hover {
+    background: #e2d9ff;
+}
+
+.numeric-keypad .span-two {
+    grid-column: span 2;
+}
+
+.amount-highlight {
+    color: #151530;
+}
+
+.payment-panel p {
+    margin-bottom: 16px;
+}
+
 @media (max-width: 1100px) {
     .pos-content {
         grid-template-columns: 1fr;

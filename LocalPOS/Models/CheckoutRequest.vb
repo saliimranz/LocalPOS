@@ -4,6 +4,14 @@ Namespace LocalPOS.Models
         Public Property DealerName As String
         Public Property PaymentMethod As String
         Public Property PartialAmount As Decimal?
+        Public Property CorporatePaymentType As String
+        Public Property PaymentAmount As Decimal
+        Public Property CashReceived As Decimal?
+        Public Property CashChange As Decimal?
+        Public Property CardRrn As String
+        Public Property CardAuthCode As String
+        Public Property CardStatus As String
+        Public Property TaxPercent As Decimal
         Public Property DiscountPercent As Decimal
         Public Property Subtotal As Decimal
         Public Property TaxAmount As Decimal
