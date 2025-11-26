@@ -302,9 +302,16 @@ Public Class _Default
     End Sub
 
     Private Function IsCorporateCustomerSelected() As Boolean
-        Dim selectedValue = If(ddlCustomers.SelectedItem Is Not Nothing, ddlCustomers.SelectedValue, String.Empty)
-        Return Not String.IsNullOrWhiteSpace(selectedValue) AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
+        If ddlCustomers.SelectedItem Is Nothing Then
+            Return False
+        End If
+
+        Dim selectedValue As String = ddlCustomers.SelectedValue.ToString()
+
+        Return Not String.IsNullOrWhiteSpace(selectedValue) _
+        AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
     End Function
+
 
     Protected Sub btnClearCart_Click(sender As Object, e As EventArgs)
         GetCart().Clear()
