@@ -33,6 +33,14 @@ Namespace LocalPOS.Services
             Return _productRepository.GetProduct(productId)
         End Function
 
+        Public Function CreateProduct(request As ProductCreateRequest) As Integer
+            Return _productRepository.CreateProduct(request)
+        End Function
+
+        Public Sub UpdateProduct(request As ProductUpdateRequest)
+            _productRepository.UpdateProduct(request)
+        End Sub
+
         Public Function CompleteCheckout(request As CheckoutRequest) As CheckoutResult
             Return _orderRepository.CreateOrder(request)
         End Function

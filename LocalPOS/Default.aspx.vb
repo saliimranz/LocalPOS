@@ -187,7 +187,26 @@ Public Class _Default
         If imagePath Is Nothing OrElse String.IsNullOrWhiteSpace(imagePath.ToString()) Then
             Return "https://via.placeholder.com/320x200.png?text=No+Image"
         End If
-        Return imagePath.ToString()
+
+        Dim path = imagePath.ToString()
+        If path.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
+            Return path
+        End If
+
+        Return ResolveUrl(path)
+    End Function
+
+    Protected Function GetProductDetailsUrl(productId As Object) As String
+        If productId Is Nothing Then
+            Return ResolveUrl("~/ProductDetails.aspx")
+        End If
+
+        Dim parsed As Integer
+        If Integer.TryParse(productId.ToString(), parsed) AndAlso parsed > 0 Then
+            Return ResolveUrl($"~/ProductDetails.aspx?id={parsed}")
+        End If
+
+        Return ResolveUrl("~/ProductDetails.aspx")
     End Function
 
     Protected Function IsLowStock(stockObj As Object, thresholdObj As Object) As Boolean
