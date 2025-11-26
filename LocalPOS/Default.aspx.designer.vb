@@ -130,6 +130,15 @@ Partial Public Class _Default
     '''</remarks>
     Protected WithEvents ddlCustomers As Global.System.Web.UI.WebControls.DropDownList
 
+        '''<summary>
+        '''btnViewCustomerProfile control.
+        '''</summary>
+        '''<remarks>
+        '''Auto-generated field.
+        '''To modify move field declaration from designer file to code-behind file.
+        '''</remarks>
+        Protected WithEvents btnViewCustomerProfile As Global.System.Web.UI.WebControls.Button
+
     '''<summary>
     '''litCartCount control.
     '''</summary>

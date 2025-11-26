@@ -135,6 +135,7 @@
   <ItemGroup>
     <Content Include="About.aspx" />
     <Content Include="Contact.aspx" />
+    <Content Include="CustomerProfile.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
     <Content Include="Content\bootstrap-grid.rtl.css" />
@@ -228,9 +229,14 @@
     <Compile Include="Data\ProductRepository.vb" />
     <Compile Include="Data\SqlRepositoryBase.vb" />
     <Compile Include="Models\CartItem.vb" />
+    <Compile Include="Models\CustomerOrderSummary.vb" />
     <Compile Include="Models\CheckoutRequest.vb" />
     <Compile Include="Models\CheckoutResult.vb" />
     <Compile Include="Models\Dealer.vb" />
+    <Compile Include="Models\OrderPaymentRecord.vb" />
+    <Compile Include="Models\PendingPaymentContext.vb" />
+    <Compile Include="Models\PendingPaymentRequest.vb" />
+    <Compile Include="Models\PendingPaymentResult.vb" />
     <Compile Include="Models\Product.vb" />
     <Compile Include="Models\ProductCreateRequest.vb" />
     <Compile Include="Models\ProductSkuRequest.vb" />
@@ -251,12 +257,19 @@
       <DependentUpon>Contact.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
     </Compile>
+    <Compile Include="CustomerProfile.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>CustomerProfile.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Default.aspx.vb">
       <SubType>ASPXCodeBehind</SubType>
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
     <Compile Include="Default.aspx.designer.vb">
       <DependentUpon>Default.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CustomerProfile.aspx.designer.vb">
+      <DependentUpon>CustomerProfile.aspx</DependentUpon>
     </Compile>
     <Compile Include="ManageProducts.aspx.vb">
       <SubType>ASPXCodeBehind</SubType>

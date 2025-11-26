@@ -101,6 +101,9 @@
                         <div class="customer-select">
                             <label class="form-label fw-semibold">Customer</label>
                             <asp:DropDownList runat="server" ID="ddlCustomers" AutoPostBack="true" CssClass="form-select" OnSelectedIndexChanged="ddlCustomers_SelectedIndexChanged"></asp:DropDownList>
+                            <div class="customer-actions">
+                                <asp:Button runat="server" ID="btnViewCustomerProfile" CssClass="btn btn-link p-0" Text="View profile" CausesValidation="false" OnClick="btnViewCustomerProfile_Click" />
+                            </div>
                         </div>
 
                         <div class="cart-header">
