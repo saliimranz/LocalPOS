@@ -239,6 +239,42 @@ Partial Public Class _Default
     Protected WithEvents btnCheckout As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
+    '''litAmountDueHeader control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litAmountDueHeader As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litModalSubtotal control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litModalSubtotal As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litModalDiscount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litModalDiscount As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litModalTax control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litModalTax As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
     '''litModalTotal control.
     '''</summary>
     '''<remarks>
@@ -257,13 +293,94 @@ Partial Public Class _Default
     Protected WithEvents rblPaymentMethod As Global.System.Web.UI.WebControls.RadioButtonList
 
     '''<summary>
-    '''txtPartialAmount control.
+    '''pnlCorporatePayment control.
     '''</summary>
     '''<remarks>
     '''Auto-generated field.
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
-    Protected WithEvents txtPartialAmount As Global.System.Web.UI.WebControls.TextBox
+    Protected WithEvents pnlCorporatePayment As Global.System.Web.UI.WebControls.Panel
+
+    '''<summary>
+    '''rblCorporatePaymentType control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents rblCorporatePaymentType As Global.System.Web.UI.WebControls.RadioButtonList
+
+    '''<summary>
+    '''txtCorporatePartialAmount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents txtCorporatePartialAmount As Global.System.Web.UI.WebControls.TextBox
+
+    '''<summary>
+    '''litCashAmountDue control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litCashAmountDue As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litCashChange control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litCashChange As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''txtCashReceived control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents txtCashReceived As Global.System.Web.UI.WebControls.TextBox
+
+    '''<summary>
+    '''litCardAmountDue control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litCardAmountDue As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''txtCardRrn control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents txtCardRrn As Global.System.Web.UI.WebControls.TextBox
+
+    '''<summary>
+    '''txtCardAuthCode control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents txtCardAuthCode As Global.System.Web.UI.WebControls.TextBox
+
+    '''<summary>
+    '''ddlCardStatus control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents ddlCardStatus As Global.System.Web.UI.WebControls.DropDownList
 
     '''<summary>
     '''lblCheckoutError control.
@@ -291,4 +408,40 @@ Partial Public Class _Default
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
     Protected WithEvents btnCompletePayment As Global.System.Web.UI.WebControls.Button
+
+    '''<summary>
+    '''hfAmountDue control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfAmountDue As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfBaseAmountDue control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfBaseAmountDue As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfCurrencySymbol control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfCurrencySymbol As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfIsCorporateCustomer control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfIsCorporateCustomer As Global.System.Web.UI.WebControls.HiddenField
 End Class

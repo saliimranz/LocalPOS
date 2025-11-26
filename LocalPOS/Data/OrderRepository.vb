@@ -1,4 +1,6 @@
+Imports System.Collections.Generic
 Imports System.Data.SqlClient
+Imports System.Globalization
 Imports LocalPOS.LocalPOS.Models
 
 Namespace LocalPOS.Data
@@ -13,8 +15,8 @@ Namespace LocalPOS.Data
 
             Dim orderNumber = GenerateOrderNumber()
             Dim inquiryNo = $"INQ-{DateTime.UtcNow:yyyyMMddHHmmss}"
-            Dim paidAmount = CalculatePaidAmount(request)
-            Dim outstanding = request.TotalDue - paidAmount
+            Dim paidAmount = ResolvePaidAmount(request)
+            Dim outstanding = Math.Max(0D, request.TotalDue - paidAmount)
             Dim paymentReference = $"PMT-{DateTime.UtcNow:yyyyMMddHHmmssfff}"
 
             Using connection = CreateConnection()
@@ -22,7 +24,8 @@ Namespace LocalPOS.Data
                     Try
                         Dim orderId = InsertOrder(connection, transaction, request, orderNumber, inquiryNo, outstanding)
                         InsertOrderItems(connection, transaction, orderId, request)
-                        InsertPayment(connection, transaction, orderId, paymentReference, request.PaymentMethod, paidAmount, outstanding, request.CreatedBy)
+                        Dim paymentNotes = BuildPaymentNotes(request, outstanding)
+                        InsertPayment(connection, transaction, orderId, paymentReference, request.PaymentMethod, paidAmount, outstanding, request.CreatedBy, paymentNotes)
                         transaction.Commit()
 
                         Return New CheckoutResult() With {
@@ -131,14 +134,15 @@ VALUES
                     command.Parameters.AddWithValue("@TaxRate", cartItem.TaxRate)
                     command.ExecuteNonQuery()
                 End Using
+                UpdateSkuQuantity(connection, transaction, cartItem.ProductId, cartItem.Quantity)
             Next
         End Sub
 
-        Private Shared Sub InsertPayment(connection As SqlConnection, transaction As SqlTransaction, orderId As Integer, paymentReference As String, method As String, paidAmount As Decimal, outstanding As Decimal, createdBy As String)
+        Private Shared Sub InsertPayment(connection As SqlConnection, transaction As SqlTransaction, orderId As Integer, paymentReference As String, method As String, paidAmount As Decimal, outstanding As Decimal, createdBy As String, notes As String)
             Using command = connection.CreateCommand()
                 command.Transaction = transaction
                 command.CommandText =
-"INSERT INTO dbo.TBL_SP_PSO_PAYMENT
+"INSERT INTO dbo.TBL_SP_PSO_PAYMENT_2
 (
     ORDER_ID,
     PAYMENT_REFERENCE,
@@ -146,7 +150,8 @@ VALUES
     PAID_AMOUNT,
     OUTSTANDING,
     IS_PARTIAL,
-    CREATED_BY
+    CREATED_BY,
+    NOTES
 )
 VALUES
 (
@@ -156,7 +161,8 @@ VALUES
     @PaidAmount,
     @Outstanding,
     CASE WHEN @Outstanding > 0 THEN 1 ELSE 0 END,
-    @CreatedBy
+    @CreatedBy,
+    @Notes
 )"
                 command.Parameters.AddWithValue("@OrderId", orderId)
                 command.Parameters.AddWithValue("@Reference", paymentReference)
@@ -164,6 +170,11 @@ VALUES
                 command.Parameters.AddWithValue("@PaidAmount", paidAmount)
                 command.Parameters.AddWithValue("@Outstanding", outstanding)
                 command.Parameters.AddWithValue("@CreatedBy", createdBy)
+                If String.IsNullOrWhiteSpace(notes) Then
+                    command.Parameters.AddWithValue("@Notes", CType(DBNull.Value, Object))
+                Else
+                    command.Parameters.AddWithValue("@Notes", notes)
+                End If
                 command.ExecuteNonQuery()
             End Using
         End Sub
@@ -172,23 +183,73 @@ VALUES
             Return $"POS-{DateTime.UtcNow:yyyyMMddHHmmssfff}"
         End Function
 
-        Private Shared Function CalculatePaidAmount(request As CheckoutRequest) As Decimal
-            Select Case request.PaymentMethod
-                Case "Cash", "Card"
-                    Return request.TotalDue
-                Case "Credit"
-                    Return 0D
-                Case "Partial"
-                    If Not request.PartialAmount.HasValue OrElse request.PartialAmount.Value <= 0D Then
-                        Throw New InvalidOperationException("Partial payment amount is required.")
-                    End If
-                    If request.PartialAmount.Value > request.TotalDue Then
-                        Throw New InvalidOperationException("Partial amount cannot exceed total due.")
-                    End If
-                    Return request.PartialAmount.Value
-                Case Else
-                    Throw New InvalidOperationException("Unsupported payment method.")
-            End Select
+        Private Shared Sub UpdateSkuQuantity(connection As SqlConnection, transaction As SqlTransaction, skuId As Integer, quantitySold As Integer)
+            Using command = connection.CreateCommand()
+                command.Transaction = transaction
+                command.CommandText =
+"UPDATE dbo.TBL_SP_PSO_SKU
+SET StockQuantity = CASE WHEN StockQuantity >= @Qty THEN StockQuantity - @Qty ELSE 0 END,
+    LastUpdated = GETDATE()
+WHERE ID = @SkuId"
+                command.Parameters.AddWithValue("@Qty", quantitySold)
+                command.Parameters.AddWithValue("@SkuId", skuId)
+                Dim affected = command.ExecuteNonQuery()
+                If affected = 0 Then
+                    Throw New InvalidOperationException($"Unable to update inventory for SKU ID {skuId}.")
+                End If
+            End Using
+        End Sub
+
+        Private Shared Function BuildPaymentNotes(request As CheckoutRequest, outstanding As Decimal) As String
+            Dim notes As New List(Of String) From {
+                $"Method:{request.PaymentMethod}"
+            }
+
+            If Not String.IsNullOrWhiteSpace(request.CorporatePaymentType) Then
+                notes.Add($"Type:{request.CorporatePaymentType}")
+            End If
+
+            notes.Add($"Paid:{request.PaymentAmount.ToString("F2", CultureInfo.InvariantCulture)}")
+
+            If outstanding > 0D Then
+                notes.Add($"Outstanding:{outstanding.ToString("F2", CultureInfo.InvariantCulture)}")
+            End If
+
+            If request.PaymentMethod = "Cash" Then
+                If request.CashReceived.HasValue Then
+                    notes.Add($"CashReceived:{request.CashReceived.Value.ToString("F2", CultureInfo.InvariantCulture)}")
+                End If
+                If request.CashChange.HasValue Then
+                    notes.Add($"Change:{request.CashChange.Value.ToString("F2", CultureInfo.InvariantCulture)}")
+                End If
+            ElseIf request.PaymentMethod = "Card" Then
+                If Not String.IsNullOrWhiteSpace(request.CardRrn) Then
+                    notes.Add($"RRN:{request.CardRrn}")
+                End If
+                If Not String.IsNullOrWhiteSpace(request.CardAuthCode) Then
+                    notes.Add($"Auth:{request.CardAuthCode}")
+                End If
+                If Not String.IsNullOrWhiteSpace(request.CardStatus) Then
+                    notes.Add($"Status:{request.CardStatus}")
+                End If
+            End If
+
+            Dim formatted = String.Join(" | ", notes)
+            If formatted.Length > 480 Then
+                formatted = formatted.Substring(0, 480)
+            End If
+            Return formatted
+        End Function
+
+        Private Shared Function ResolvePaidAmount(request As CheckoutRequest) As Decimal
+            Dim amount = request.PaymentAmount
+            If amount <= 0D Then
+                Throw New InvalidOperationException("Payment amount must be greater than zero.")
+            End If
+            If amount > request.TotalDue Then
+                Throw New InvalidOperationException("Payment amount cannot exceed total due.")
+            End If
+            Return amount
         End Function
     End Class
 End Namespace

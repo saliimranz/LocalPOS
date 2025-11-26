@@ -52,8 +52,18 @@ Public Class _Default
         End Set
     End Property
 
+    Private Property DiscountValue As Decimal
+        Get
+            Return If(ViewState("DiscountValue") IsNot Nothing, CType(ViewState("DiscountValue"), Decimal), 0D)
+        End Get
+        Set(value As Decimal)
+            ViewState("DiscountValue") = value
+        End Set
+    End Property
+
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
         litTaxRate.Text = String.Format(CultureInfo.CurrentCulture, "{0:P0}", TaxRate)
+        hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
 
         If Not IsPostBack Then
             lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
@@ -66,6 +76,7 @@ Public Class _Default
             BindProducts()
             BindCart()
             UpdatePaymentAvailability()
+            litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
         End If
     End Sub
 
@@ -115,10 +126,13 @@ Public Class _Default
         SubtotalValue = subtotal
         TaxValue = taxAmount
         TotalValue = total
+        DiscountValue = discountAmount
 
         litSubtotal.Text = subtotal.ToString("C", CultureInfo.CurrentCulture)
         litTax.Text = taxAmount.ToString("C", CultureInfo.CurrentCulture)
         litTotal.Text = total.ToString("C", CultureInfo.CurrentCulture)
+        hfBaseAmountDue.Value = total.ToString(CultureInfo.InvariantCulture)
+        hfAmountDue.Value = hfBaseAmountDue.Value
     End Sub
 
     Private Function GetCart() As List(Of CartItem)
@@ -251,46 +265,24 @@ Public Class _Default
     End Sub
 
     Private Sub UpdatePaymentAvailability()
-        Dim selectedValue = If(ddlCustomers.SelectedItem IsNot Nothing, ddlCustomers.SelectedValue, String.Empty)
-        Dim isCorporateCustomer = Not String.IsNullOrWhiteSpace(selectedValue) AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
+        Dim isCorporateCustomer = IsCorporateCustomerSelected()
+        hfIsCorporateCustomer.Value = If(isCorporateCustomer, "true", "false")
+        pnlCorporatePayment.CssClass = If(isCorporateCustomer, "corporate-payment-options", "corporate-payment-options d-none")
 
-        If isCorporateCustomer Then
-            EnsureCorporatePaymentOptions()
-        Else
-            RemoveCorporatePaymentOptions()
+        If Not isCorporateCustomer Then
+            rblCorporatePaymentType.SelectedValue = "Full"
+            txtCorporatePartialAmount.Text = String.Empty
         End If
 
-        If Not isCorporateCustomer AndAlso (rblPaymentMethod.SelectedValue = "Credit" OrElse rblPaymentMethod.SelectedValue = "Partial") Then
+        If String.IsNullOrWhiteSpace(rblPaymentMethod.SelectedValue) Then
             rblPaymentMethod.SelectedValue = "Cash"
         End If
     End Sub
 
-    Private Sub EnsureCorporatePaymentOptions()
-        EnsurePaymentOption("Credit", "Credit Account", 2)
-        EnsurePaymentOption("Partial", "Partial Payment", 3)
-    End Sub
-
-    Private Sub RemoveCorporatePaymentOptions()
-        RemovePaymentOption("Credit")
-        RemovePaymentOption("Partial")
-    End Sub
-
-    Private Sub EnsurePaymentOption(value As String, text As String, desiredIndex As Integer)
-        If rblPaymentMethod.Items.FindByValue(value) IsNot Nothing Then
-            Return
-        End If
-
-        Dim item As New ListItem(text, value)
-        Dim insertIndex = Math.Max(0, Math.Min(desiredIndex, rblPaymentMethod.Items.Count))
-        rblPaymentMethod.Items.Insert(insertIndex, item)
-    End Sub
-
-    Private Sub RemovePaymentOption(value As String)
-        Dim item = rblPaymentMethod.Items.FindByValue(value)
-        If item IsNot Nothing Then
-            rblPaymentMethod.Items.Remove(item)
-        End If
-    End Sub
+    Private Function IsCorporateCustomerSelected() As Boolean
+        Dim selectedValue = If(ddlCustomers.SelectedItem Is Not Nothing, ddlCustomers.SelectedValue, String.Empty)
+        Return Not String.IsNullOrWhiteSpace(selectedValue) AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
+    End Function
 
     Protected Sub btnClearCart_Click(sender As Object, e As EventArgs)
         GetCart().Clear()
@@ -318,7 +310,7 @@ Public Class _Default
 
     Protected Sub btnNewSale_Click(sender As Object, e As EventArgs)
         txtDiscount.Text = "0"
-        txtPartialAmount.Text = String.Empty
+        ResetPaymentFormState()
         GetCart().Clear()
         BindCart()
         ShowCartMessage("New sale started.", True)
@@ -331,8 +323,24 @@ Public Class _Default
             Return
         End If
 
-        litModalTotal.Text = TotalValue.ToString("C", CultureInfo.CurrentCulture)
+        Dim subtotalText = SubtotalValue.ToString("C", CultureInfo.CurrentCulture)
+        Dim discountText = DiscountValue.ToString("C", CultureInfo.CurrentCulture)
+        Dim taxText = TaxValue.ToString("C", CultureInfo.CurrentCulture)
+        Dim amountDueText = TotalValue.ToString("C", CultureInfo.CurrentCulture)
+
+        litModalSubtotal.Text = subtotalText
+        litModalDiscount.Text = discountText
+        litModalTax.Text = taxText
+        litModalTotal.Text = amountDueText
+        litAmountDueHeader.Text = amountDueText
+        litCashAmountDue.Text = amountDueText
+        litCardAmountDue.Text = amountDueText
+        ResetPaymentFormState()
+
         lblCheckoutError.Text = String.Empty
+        hfBaseAmountDue.Value = TotalValue.ToString(CultureInfo.InvariantCulture)
+        hfAmountDue.Value = hfBaseAmountDue.Value
+        rblPaymentMethod.SelectedValue = "Cash"
         UpdatePaymentAvailability()
         ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowPaymentModal", "PosUI.showPaymentModal();", True)
     End Sub
@@ -346,16 +354,20 @@ Public Class _Default
             End If
 
             Dim method = rblPaymentMethod.SelectedValue
-            Dim dealerId = If(String.IsNullOrWhiteSpace(ddlCustomers.SelectedValue), 0, Convert.ToInt32(ddlCustomers.SelectedValue, CultureInfo.InvariantCulture))
-            If (method = "Credit" OrElse method = "Partial") AndAlso dealerId = 0 Then
-                lblCheckoutError.Text = "Select a registered customer for credit or partial payments."
+            If String.IsNullOrWhiteSpace(method) Then
+                lblCheckoutError.Text = "Select a payment method."
                 Return
             End If
 
+            Dim dealerId = If(String.IsNullOrWhiteSpace(ddlCustomers.SelectedValue), 0, Convert.ToInt32(ddlCustomers.SelectedValue, CultureInfo.InvariantCulture))
+            Dim dealerName = If(ddlCustomers.SelectedItem IsNot Nothing, ddlCustomers.SelectedItem.Text, "Walk-in Customer")
+            Dim isCorporateCustomer = IsCorporateCustomerSelected()
+            Dim corporatePaymentType = If(isCorporateCustomer, rblCorporatePaymentType.SelectedValue, "Full")
+
             Dim partialAmount As Decimal? = Nothing
-            If method = "Partial" Then
+            If isCorporateCustomer AndAlso String.Equals(corporatePaymentType, "Partial", StringComparison.OrdinalIgnoreCase) Then
                 Dim parsed As Decimal
-                If Not Decimal.TryParse(txtPartialAmount.Text, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) OrElse parsed <= 0 Then
+                If Not Decimal.TryParse(txtCorporatePartialAmount.Text, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) OrElse parsed <= 0D Then
                     lblCheckoutError.Text = "Enter a valid partial amount."
                     Return
                 End If
@@ -364,32 +376,92 @@ Public Class _Default
                     Return
                 End If
                 partialAmount = parsed
+            Else
+                corporatePaymentType = "Full"
             End If
 
-            Dim dealerName = ddlCustomers.SelectedItem.Text
+            Dim paymentAmount = If(partialAmount.HasValue, partialAmount.Value, TotalValue)
+            If paymentAmount <= 0D Then
+                lblCheckoutError.Text = "Payment amount must be greater than zero."
+                Return
+            End If
+
             Dim request As New CheckoutRequest() With {
                 .DealerId = dealerId,
                 .DealerName = dealerName,
                 .PaymentMethod = method,
+                .PaymentAmount = paymentAmount,
                 .PartialAmount = partialAmount,
+                .CorporatePaymentType = corporatePaymentType,
                 .DiscountPercent = GetDiscountPercent(),
                 .Subtotal = SubtotalValue,
                 .TaxAmount = TaxValue,
                 .TotalDue = TotalValue,
-                .CartItems = GetCart().Select(Function(ci) ci.Clone()).ToList(),
+                .CartItems = cart.Select(Function(ci) ci.Clone()).ToList(),
                 .CreatedBy = lblCashierName.Text
             }
+
+            Select Case method
+                Case "Cash"
+                    Dim cashReceived As Decimal
+                    If Not Decimal.TryParse(txtCashReceived.Text, NumberStyles.Float, CultureInfo.InvariantCulture, cashReceived) OrElse cashReceived <= 0D Then
+                        lblCheckoutError.Text = "Enter the cash amount received."
+                        Return
+                    End If
+                    If cashReceived < paymentAmount Then
+                        lblCheckoutError.Text = "Cash received cannot be less than the amount due."
+                        Return
+                    End If
+                    request.CashReceived = cashReceived
+                    request.CashChange = cashReceived - paymentAmount
+                Case "Card"
+                    Dim rrn = txtCardRrn.Text.Trim()
+                    If String.IsNullOrWhiteSpace(rrn) Then
+                        lblCheckoutError.Text = "Bank POS receipt number (RRN) is required."
+                        Return
+                    End If
+                    Dim status = ddlCardStatus.SelectedValue
+                    If Not status.Equals("Approved", StringComparison.OrdinalIgnoreCase) Then
+                        lblCheckoutError.Text = "Only approved card transactions can be completed."
+                        Return
+                    End If
+                    request.CardRrn = rrn
+                    request.CardAuthCode = txtCardAuthCode.Text.Trim()
+                    request.CardStatus = status
+                Case Else
+                    lblCheckoutError.Text = "Unsupported payment method selected."
+                    Return
+            End Select
 
             Dim result = _posService.CompleteCheckout(request)
 
             GetCart().Clear()
-            txtPartialAmount.Text = String.Empty
+            ResetPaymentFormState()
             BindCart()
             ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HidePaymentModal", "PosUI.hidePaymentModal();", True)
             ShowCartMessage($"Order {result.OrderNumber} completed. Receipt {result.ReceiptNumber}.", True)
         Catch ex As Exception
             lblCheckoutError.Text = $"Checkout failed: {ex.Message}"
         End Try
+    End Sub
+
+    Private Sub ResetPaymentFormState()
+        txtCashReceived.Text = String.Empty
+        txtCardRrn.Text = String.Empty
+        txtCardAuthCode.Text = String.Empty
+
+        Dim approvedItem = ddlCardStatus.Items.FindByValue("Approved")
+        If approvedItem IsNot Nothing Then
+            ddlCardStatus.SelectedValue = "Approved"
+        ElseIf ddlCardStatus.Items.Count > 0 Then
+            ddlCardStatus.SelectedIndex = 0
+        End If
+
+        txtCorporatePartialAmount.Text = String.Empty
+        rblCorporatePaymentType.SelectedValue = "Full"
+        litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
+        hfBaseAmountDue.Value = "0"
+        hfAmountDue.Value = "0"
     End Sub
 
     Private Sub ShowCartMessage(message As String, success As Boolean)
