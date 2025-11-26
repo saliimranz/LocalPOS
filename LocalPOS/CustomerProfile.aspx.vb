@@ -69,12 +69,12 @@ Public Partial Class CustomerProfile
             litTotalPaid.Text = FormatCurrency(totalPaid)
         End Sub
 
-        Protected Function FormatCurrency(value As Object) As String
+    Public Function FormatCurrency(value As Object) As String
             Dim amount = ConvertToDecimal(value)
             Return amount.ToString("C", CultureInfo.CurrentCulture)
         End Function
 
-        Protected Function GetStatusCss(outstandingObj As Object, statusObj As Object) As String
+    Public Function GetStatusCss(outstandingObj As Object, statusObj As Object) As String
             Dim outstanding = ConvertToDecimal(outstandingObj)
             If outstanding > 0D Then
                 Return "status-pill status-pending"
@@ -87,7 +87,7 @@ Public Partial Class CustomerProfile
             Return "status-pill status-complete"
         End Function
 
-        Protected Function GetStatusText(outstandingObj As Object, statusObj As Object) As String
+    Public Function GetStatusText(outstandingObj As Object, statusObj As Object) As String
             Dim outstanding = ConvertToDecimal(outstandingObj)
             If outstanding > 0D Then
                 Return "Pending payment"
@@ -100,7 +100,7 @@ Public Partial Class CustomerProfile
             Return status
         End Function
 
-        Protected Function HasOutstanding(value As Object) As Boolean
+    Public Function HasOutstanding(value As Object) As Boolean
             Return ConvertToDecimal(value) > 0D
         End Function
 
