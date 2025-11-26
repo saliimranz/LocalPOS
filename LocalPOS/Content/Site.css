@@ -417,6 +417,12 @@
     padding: 12px 16px;
 }
 
+.tax-percent-input[readonly] {
+    background: #f4f4f6;
+    color: #6c6c80;
+    cursor: not-allowed;
+}
+
 .payment-methods {
     margin-bottom: 16px;
 }

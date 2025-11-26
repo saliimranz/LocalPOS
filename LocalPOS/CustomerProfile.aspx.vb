@@ -138,17 +138,20 @@ Public Partial Class CustomerProfile
             hfSettlementOrderId.Value = orderId.ToString(CultureInfo.InvariantCulture)
             Dim outstanding = context.OutstandingAmount
 
+            Dim vatPercent = Math.Max(0D, context.VatPercent)
+            Dim taxableBase = CalculateTaxableBase(outstanding, vatPercent)
+
             hfBaseAmountDue.Value = outstanding.ToString(CultureInfo.InvariantCulture)
             hfAmountDue.Value = hfBaseAmountDue.Value
-            hfTaxableAmount.Value = outstanding.ToString(CultureInfo.InvariantCulture)
-            hfDefaultTaxPercent.Value = context.VatPercent.ToString(CultureInfo.InvariantCulture)
+            hfTaxableAmount.Value = taxableBase.ToString(CultureInfo.InvariantCulture)
+            hfDefaultTaxPercent.Value = vatPercent.ToString(CultureInfo.InvariantCulture)
 
-            txtModalTaxPercent.Text = context.VatPercent.ToString("F2", CultureInfo.InvariantCulture)
+            txtModalTaxPercent.Text = vatPercent.ToString("F2", CultureInfo.InvariantCulture)
 
             litModalSubtotal.Text = FormatCurrency(context.TotalAmount)
             litModalDiscount.Text = FormatCurrency(context.PreviouslyPaid)
 
-            Dim taxAmount = CalculateTaxPortion(context.TotalAmount, context.VatPercent)
+            Dim taxAmount = CalculateTaxPortion(context.TotalAmount, vatPercent)
             litModalTax.Text = FormatCurrency(taxAmount)
 
             Dim outstandingFormatted = FormatCurrency(outstanding)
@@ -175,6 +178,20 @@ Public Partial Class CustomerProfile
 
             Dim preTax = totalAmount / divisor
             Return totalAmount - preTax
+        End Function
+
+        Private Shared Function CalculateTaxableBase(grossAmount As Decimal, vatPercent As Decimal) As Decimal
+            If vatPercent <= 0D Then
+                Return grossAmount
+            End If
+
+            Dim divisor = 1D + (vatPercent / 100D)
+            If divisor = 0D Then
+                Return grossAmount
+            End If
+
+            Dim baseAmount = grossAmount / divisor
+            Return Decimal.Round(baseAmount, 2, MidpointRounding.AwayFromZero)
         End Function
 
         Protected Sub btnCompletePayment_Click(sender As Object, e As EventArgs)
