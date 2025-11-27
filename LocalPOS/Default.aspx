@@ -41,7 +41,10 @@
                         </div>
 
                         <div class="pos-toolbar">
-                            <asp:HyperLink runat="server" ID="lnkManageProducts" CssClass="btn btn-outline-secondary" NavigateUrl="~/ManageProducts.aspx">Manage catalog</asp:HyperLink>
+                            <asp:HyperLink runat="server" ID="lnkManageProducts" CssClass="btn btn-purple btn-add-product" NavigateUrl="~/ManageProducts.aspx">
+                                <span class="add-product-icon" aria-hidden="true">+</span>
+                                Add product
+                            </asp:HyperLink>
                         </div>
 
                         <div class="category-pills">
@@ -102,13 +105,13 @@
                             <label class="form-label fw-semibold">Customer</label>
                             <asp:DropDownList runat="server" ID="ddlCustomers" AutoPostBack="true" CssClass="form-select" OnSelectedIndexChanged="ddlCustomers_SelectedIndexChanged"></asp:DropDownList>
                             <div class="customer-actions">
-                                <asp:Button runat="server" ID="btnViewCustomerProfile" CssClass="btn btn-link p-0" Text="View profile" CausesValidation="false" OnClick="btnViewCustomerProfile_Click" />
+                                <asp:Button runat="server" ID="btnViewCustomerProfile" CssClass="btn btn-purple w-100 btn-view-profile" Text="View profile" CausesValidation="false" OnClick="btnViewCustomerProfile_Click" />
                             </div>
                         </div>
 
                         <div class="cart-header">
                             <span>Cart Items (<asp:Literal runat="server" ID="litCartCount"></asp:Literal>)</span>
-                            <asp:LinkButton runat="server" ID="btnClearCart" CssClass="text-danger" OnClick="btnClearCart_Click">Clear</asp:LinkButton>
+                            <asp:LinkButton runat="server" ID="btnClearCart" CssClass="btn btn-danger btn-sm btn-clear-cart" OnClick="btnClearCart_Click" CausesValidation="false">Clear</asp:LinkButton>
                         </div>
 
                         <div class="cart-items">
@@ -125,11 +128,16 @@
                                             <small class="text-muted"><%# Eval("UnitPrice", "{0:C}") %> each</small>
                                         </div>
                                         <div class="qty-controls">
-                                            <asp:LinkButton runat="server" CssClass="qty-btn" Text="-" CommandName="Decrease" CommandArgument='<%# Eval("ProductId") %>'></asp:LinkButton>
+                                            <asp:LinkButton runat="server" CssClass="btn btn-qty btn-qty-decrease" Text="-" CommandName="Decrease" CommandArgument='<%# Eval("ProductId") %>' CausesValidation="false"></asp:LinkButton>
                                             <span><%# Eval("Quantity") %></span>
-                                            <asp:LinkButton runat="server" CssClass="qty-btn" Text="+" CommandName="Increase" CommandArgument='<%# Eval("ProductId") %>'></asp:LinkButton>
+                                            <asp:LinkButton runat="server" CssClass="btn btn-qty btn-qty-increase" Text="+" CommandName="Increase" CommandArgument='<%# Eval("ProductId") %>' CausesValidation="false"></asp:LinkButton>
                                         </div>
-                                        <asp:LinkButton runat="server" CssClass="btn btn-link text-danger" Text="x" CommandName="Remove" CommandArgument='<%# Eval("ProductId") %>'></asp:LinkButton>
+                                        <asp:LinkButton runat="server" CssClass="btn btn-icon btn-remove-item" CommandName="Remove" CommandArgument='<%# Eval("ProductId") %>' CausesValidation="false">
+                                            <svg class="icon-trash" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                                                <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6v8h2V9h-2zm4 0v8h2V9h-2z" fill="currentColor"/>
+                                            </svg>
+                                            <span class="visually-hidden">Remove</span>
+                                        </asp:LinkButton>
                                     </div>
                                 </ItemTemplate>
                             </asp:Repeater>

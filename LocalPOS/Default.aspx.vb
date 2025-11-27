@@ -78,6 +78,8 @@ Public Class _Default
             UpdatePaymentAvailability()
             litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
         End If
+
+        UpdateCustomerProfileButtonState()
     End Sub
 
     Private Sub BindCustomers()
@@ -367,6 +369,7 @@ Public Class _Default
 
     Protected Sub ddlCustomers_SelectedIndexChanged(sender As Object, e As EventArgs)
         UpdatePaymentAvailability()
+        UpdateCustomerProfileButtonState()
     End Sub
 
     Protected Sub btnViewCustomerProfile_Click(sender As Object, e As EventArgs)
@@ -393,6 +396,26 @@ Public Class _Default
             rblPaymentMethod.SelectedValue = "Cash"
         End If
     End Sub
+
+    Private Sub UpdateCustomerProfileButtonState()
+        If btnViewCustomerProfile Is Nothing Then
+            Return
+        End If
+        btnViewCustomerProfile.Visible = Not IsWalkInCustomerSelected()
+    End Sub
+
+    Private Function IsWalkInCustomerSelected() As Boolean
+        If ddlCustomers.SelectedItem Is Nothing Then
+            Return True
+        End If
+
+        Dim selectedId As Integer
+        If Integer.TryParse(ddlCustomers.SelectedValue, NumberStyles.Integer, CultureInfo.InvariantCulture, selectedId) Then
+            Return selectedId = 0
+        End If
+
+        Return True
+    End Function
 
     Private Function IsCorporateCustomerSelected() As Boolean
         If ddlCustomers.SelectedItem Is Nothing Then
