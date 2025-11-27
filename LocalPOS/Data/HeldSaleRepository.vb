@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Data.SqlClient
 Imports System.Linq
@@ -103,7 +103,7 @@ WHERE hs.ID = @Id"
                         End If
 
                         Dim detail As New HeldSaleDetail() With {
-                            .HeldSaleId = reader.GetInt32(reader.GetOrdinal("ID")),
+                            .heldSaleId = reader.GetInt32(reader.GetOrdinal("ID")),
                             .ReferenceCode = reader.GetString(reader.GetOrdinal("HOLD_REFERENCE")),
                             .DealerId = reader.GetInt32(reader.GetOrdinal("DEALER_ID")),
                             .DealerName = reader.GetString(reader.GetOrdinal("DEALER_NAME")),
@@ -294,7 +294,7 @@ ORDER BY ID ASC"
                 Using reader = command.ExecuteReader()
                     While reader.Read()
                         buffer.Add(New HeldSaleItem() With {
-                            .HeldSaleId = reader.GetInt32(reader.GetOrdinal("HELD_SALE_ID")),
+                            .heldSaleId = reader.GetInt32(reader.GetOrdinal("HELD_SALE_ID")),
                             .ProductId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID")),
                             .SkuCode = reader.GetString(reader.GetOrdinal("SKU_CODE")),
                             .Name = reader.GetString(reader.GetOrdinal("ITEM_NAME")),

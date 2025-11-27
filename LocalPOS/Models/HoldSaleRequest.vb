@@ -1,4 +1,4 @@
-Imports System.Collections.Generic
+﻿Imports System.Collections.Generic
 
 Namespace LocalPOS.Models
     ''' <summary>

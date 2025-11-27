@@ -1,4 +1,4 @@
-Namespace LocalPOS.Models
+﻿Namespace LocalPOS.Models
     ''' <summary>
     ''' Represents a single line item that was parked as part of a held sale.
     ''' </summary>
