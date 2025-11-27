@@ -63,15 +63,56 @@
 
     function cleanupModalArtifacts() {
         var body = document.body;
-        if (body) {
+        if (!body) {
+            return;
+        }
+
+        var openModals = document.querySelectorAll('.modal.show');
+        var hasOpenModal = openModals.length > 0;
+
+        if (hasOpenModal) {
+            body.classList.add('modal-open');
+        } else {
             body.classList.remove('modal-open');
             body.style.removeProperty('padding-right');
         }
-        document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
-            if (backdrop.parentNode) {
-                backdrop.parentNode.removeChild(backdrop);
+
+        var backdrops = document.querySelectorAll('.modal-backdrop');
+        if (hasOpenModal) {
+            if (!backdrops.length) {
+                var backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+            } else {
+                backdrops.forEach(function (backdrop) {
+                    backdrop.classList.add('show');
+                });
             }
-        });
+        } else {
+            backdrops.forEach(function (backdrop) {
+                if (backdrop.parentNode) {
+                    backdrop.parentNode.removeChild(backdrop);
+                }
+            });
+        }
+    }
+
+    function toggleModalById(id, action) {
+        if (typeof bootstrap === 'undefined') {
+            return null;
+        }
+        var modalEl = document.getElementById(id);
+        if (!modalEl) {
+            return null;
+        }
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        if (action === 'show') {
+            modal.show();
+        } else {
+            modal.hide();
+        }
+        cleanupModalArtifacts();
+        return modal;
     }
 
     function getTaxInput() {
@@ -374,29 +415,30 @@
         updateCashChange();
     }
 
+    document.addEventListener('shown.bs.modal', cleanupModalArtifacts);
+    document.addEventListener('hidden.bs.modal', cleanupModalArtifacts);
+
     window.PosUI = {
         showPaymentModal: function () {
-            var modalEl = document.getElementById('paymentModal');
-            if (!modalEl || typeof bootstrap === 'undefined') {
-                return;
+            var modal = toggleModalById('paymentModal', 'show');
+            if (modal) {
+                synchronizePaymentUi();
             }
-            synchronizePaymentUi();
-            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
         },
         hidePaymentModal: function () {
-            var modalEl = document.getElementById('paymentModal');
-            if (modalEl && typeof bootstrap !== 'undefined') {
-                var modal = bootstrap.Modal.getInstance(modalEl);
-                if (!modal) {
-                    modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                }
-                modal.hide();
-                if (typeof modal.dispose === 'function') {
-                    modal.dispose();
-                }
-            }
-            cleanupModalArtifacts();
+            toggleModalById('paymentModal', 'hide');
+        },
+        showHoldConfirm: function () {
+            toggleModalById('holdConfirmModal', 'show');
+        },
+        hideHoldConfirm: function () {
+            toggleModalById('holdConfirmModal', 'hide');
+        },
+        showHeldBills: function () {
+            toggleModalById('heldBillsModal', 'show');
+        },
+        hideHeldBills: function () {
+            toggleModalById('heldBillsModal', 'hide');
         }
     };
 
