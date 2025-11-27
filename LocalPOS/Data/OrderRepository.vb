@@ -8,6 +8,8 @@ Namespace LocalPOS.Data
     Public Class OrderRepository
         Inherits SqlRepositoryBase
 
+        Private Const DefaultCurrencyCode As String = "AED"
+
         Public Function CreateOrder(request As CheckoutRequest) As CheckoutResult
             If request Is Nothing Then Throw New ArgumentNullException(NameOf(request))
             If request.CartItems Is Nothing OrElse request.CartItems.Count = 0 Then
@@ -152,6 +154,7 @@ VALUES
     PAYMENT_METHOD,
     PAID_AMOUNT,
     OUTSTANDING,
+    CURRENCY_CODE,
     IS_PARTIAL,
     CREATED_BY,
     NOTES
@@ -163,6 +166,7 @@ VALUES
     @Method,
     @PaidAmount,
     @Outstanding,
+    @CurrencyCode,
     CASE WHEN @Outstanding > 0 THEN 1 ELSE 0 END,
     @CreatedBy,
     @Notes
@@ -172,6 +176,7 @@ VALUES
                 command.Parameters.AddWithValue("@Method", method)
                 command.Parameters.AddWithValue("@PaidAmount", paidAmount)
                 command.Parameters.AddWithValue("@Outstanding", outstanding)
+                command.Parameters.AddWithValue("@CurrencyCode", DefaultCurrencyCode)
                 command.Parameters.AddWithValue("@CreatedBy", createdBy)
                 If String.IsNullOrWhiteSpace(notes) Then
                     command.Parameters.AddWithValue("@Notes", CType(DBNull.Value, Object))
