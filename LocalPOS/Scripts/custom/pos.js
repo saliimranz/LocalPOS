@@ -41,7 +41,7 @@
 
     function formatCurrency(value) {
         var symbolField = document.getElementById('hfCurrencySymbol');
-        var symbol = symbolField ? symbolField.value : '';
+        var symbol = (symbolField && symbolField.value) ? symbolField.value : 'AED';
         var numericValue = Number(value || 0);
         var formatted = numericValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return symbol ? symbol + ' ' + formatted : formatted;

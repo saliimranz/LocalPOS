@@ -23,9 +23,9 @@ Public Partial Class CustomerProfile
     End Property
 
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
+        hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
         If Not IsPostBack Then
             lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
-            hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
             hfIsCorporateCustomer.Value = "false"
             LoadCustomer()
         End If
