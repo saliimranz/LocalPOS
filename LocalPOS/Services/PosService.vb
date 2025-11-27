@@ -6,11 +6,13 @@ Namespace LocalPOS.Services
         Private ReadOnly _productRepository As ProductRepository
         Private ReadOnly _dealerRepository As DealerRepository
         Private ReadOnly _orderRepository As OrderRepository
+        Private ReadOnly _heldSaleRepository As HeldSaleRepository
 
         Public Sub New()
             _productRepository = New ProductRepository()
             _dealerRepository = New DealerRepository()
             _orderRepository = New OrderRepository()
+            _heldSaleRepository = New HeldSaleRepository()
         End Sub
 
         Public Function GetCategories() As IList(Of String)
@@ -67,5 +69,21 @@ Namespace LocalPOS.Services
             request.PaymentAmount = context.OutstandingAmount
             Return _orderRepository.CompletePendingPayment(request, context)
         End Function
+
+        Public Function HoldSale(request As HoldSaleRequest) As Integer
+            Return _heldSaleRepository.SaveHeldSale(request)
+        End Function
+
+        Public Function GetHeldSales() As IList(Of HeldSaleSummary)
+            Return _heldSaleRepository.GetHeldSales()
+        End Function
+
+        Public Function GetHeldSale(heldSaleId As Integer) As HeldSaleDetail
+            Return _heldSaleRepository.GetHeldSale(heldSaleId)
+        End Function
+
+        Public Sub DeleteHeldSale(heldSaleId As Integer)
+            _heldSaleRepository.DeleteHeldSale(heldSaleId)
+        End Sub
     End Class
 End Namespace

@@ -239,6 +239,15 @@ Partial Public Class _Default
     Protected WithEvents btnHold As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
+    '''btnHeldBills control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents btnHeldBills As Global.System.Web.UI.WebControls.Button
+
+    '''<summary>
     '''btnNewSale control.
     '''</summary>
     '''<remarks>
@@ -437,6 +446,51 @@ Partial Public Class _Default
     Protected WithEvents btnCompletePayment As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
+    '''litHoldSummaryItems control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litHoldSummaryItems As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litHoldSummaryTotal control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litHoldSummaryTotal As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''btnConfirmHold control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents btnConfirmHold As Global.System.Web.UI.WebControls.Button
+
+    '''<summary>
+    '''pnlHeldBillsEmpty control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents pnlHeldBillsEmpty As Global.System.Web.UI.WebControls.Panel
+
+    '''<summary>
+    '''rptHeldBills control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents rptHeldBills As Global.System.Web.UI.WebControls.Repeater
+
+    '''<summary>
     '''hfAmountDue control.
     '''</summary>
     '''<remarks>
@@ -489,4 +543,13 @@ Partial Public Class _Default
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
     Protected WithEvents hfDefaultTaxPercent As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfActiveHeldSaleId control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfActiveHeldSaleId As Global.System.Web.UI.WebControls.HiddenField
 End Class

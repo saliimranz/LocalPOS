@@ -74,6 +74,26 @@
         });
     }
 
+    function toggleModalById(id, action) {
+        if (typeof bootstrap === 'undefined') {
+            return null;
+        }
+        var modalEl = document.getElementById(id);
+        if (!modalEl) {
+            return null;
+        }
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        if (action === 'show') {
+            modal.show();
+        } else {
+            modal.hide();
+        }
+        if (action === 'hide') {
+            cleanupModalArtifacts();
+        }
+        return modal;
+    }
+
     function getTaxInput() {
         return document.getElementById('txtModalTaxPercent');
     }
@@ -376,27 +396,25 @@
 
     window.PosUI = {
         showPaymentModal: function () {
-            var modalEl = document.getElementById('paymentModal');
-            if (!modalEl || typeof bootstrap === 'undefined') {
-                return;
+            var modal = toggleModalById('paymentModal', 'show');
+            if (modal) {
+                synchronizePaymentUi();
             }
-            synchronizePaymentUi();
-            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
         },
         hidePaymentModal: function () {
-            var modalEl = document.getElementById('paymentModal');
-            if (modalEl && typeof bootstrap !== 'undefined') {
-                var modal = bootstrap.Modal.getInstance(modalEl);
-                if (!modal) {
-                    modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                }
-                modal.hide();
-                if (typeof modal.dispose === 'function') {
-                    modal.dispose();
-                }
-            }
-            cleanupModalArtifacts();
+            toggleModalById('paymentModal', 'hide');
+        },
+        showHoldConfirm: function () {
+            toggleModalById('holdConfirmModal', 'show');
+        },
+        hideHoldConfirm: function () {
+            toggleModalById('holdConfirmModal', 'hide');
+        },
+        showHeldBills: function () {
+            toggleModalById('heldBillsModal', 'show');
+        },
+        hideHeldBills: function () {
+            toggleModalById('heldBillsModal', 'hide');
         }
     };
 

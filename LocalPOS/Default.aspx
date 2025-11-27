@@ -170,6 +170,7 @@
 
                         <div class="action-buttons">
                             <asp:Button runat="server" ID="btnHold" CssClass="btn btn-outline" Text="Hold" OnClick="btnHold_Click" CausesValidation="false" />
+                            <asp:Button runat="server" ID="btnHeldBills" CssClass="btn btn-outline" Text="Held bills" OnClick="btnHeldBills_Click" CausesValidation="false" />
                             <asp:Button runat="server" ID="btnNewSale" CssClass="btn btn-outline" Text="New" OnClick="btnNewSale_Click" CausesValidation="false" />
                             <asp:Button runat="server" ID="btnCheckout" CssClass="btn btn-primary" Text="Checkout" OnClick="btnCheckout_Click" CausesValidation="false" />
                         </div>
@@ -352,6 +353,80 @@
                 <asp:HiddenField runat="server" ID="hfIsCorporateCustomer" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfTaxableAmount" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfDefaultTaxPercent" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfActiveHeldSaleId" ClientIDMode="Static" />
+
+                <div class="modal fade modal-pos" id="holdConfirmModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content hold-modal">
+                            <div class="modal-header border-0">
+                                <div>
+                                    <h5 class="modal-title mb-1">Hold this bill?</h5>
+                                    <p class="text-muted mb-0">Cart will be saved for later. Screen will reset.</p>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="PosUI.hideHoldConfirm();"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="hold-summary">
+                                    <div>
+                                        <small class="text-muted d-block">Items</small>
+                                        <strong><asp:Literal runat="server" ID="litHoldSummaryItems"></asp:Literal></strong>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Cart total</small>
+                                        <strong><asp:Literal runat="server" ID="litHoldSummaryTotal"></asp:Literal></strong>
+                                    </div>
+                                </div>
+                                <p class="mb-0 text-muted">Held bills do not affect stock or accounting until you resume and checkout.</p>
+                            </div>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-outline-secondary" onclick="PosUI.hideHoldConfirm();">Cancel</button>
+                                <asp:Button runat="server" ID="btnConfirmHold" CssClass="btn btn-primary" Text="Yes, hold bill" OnClick="btnConfirmHold_Click" CausesValidation="false" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade modal-pos" id="heldBillsModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content held-bills-modal">
+                            <div class="modal-header border-0">
+                                <div>
+                                    <h5 class="modal-title mb-0">Held bills</h5>
+                                    <small class="text-muted">Resume or delete parked carts.</small>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="PosUI.hideHeldBills();"></button>
+                            </div>
+                            <div class="modal-body">
+                                <asp:Panel runat="server" ID="pnlHeldBillsEmpty" CssClass="empty-held-bills" Visible="false">
+                                    <p class="mb-0 text-muted">No held bills right now.</p>
+                                </asp:Panel>
+                                <asp:Repeater runat="server" ID="rptHeldBills" OnItemCommand="rptHeldBills_ItemCommand">
+                                    <ItemTemplate>
+                                        <div class="held-bill-row">
+                                            <div class="held-bill-info">
+                                                <div class="held-bill-ref"><%# Eval("ReferenceCode") %></div>
+                                                <small class="text-muted"><%# Eval("RelativeAge") %></small>
+                                            </div>
+                                            <div class="held-bill-meta">
+                                                <span><%# Eval("ItemsCount") %> items</span>
+                                                <strong><%# Eval("TotalAmount", "{0:C}") %></strong>
+                                            </div>
+                                            <div class="held-bill-actions">
+                                                <asp:LinkButton runat="server" CssClass="btn btn-link btn-sm text-primary" CommandName="Resume" CommandArgument='<%# Eval("HeldSaleId") %>' CausesValidation="false">Resume</asp:LinkButton>
+                                                <asp:LinkButton runat="server" CssClass="btn btn-icon btn-sm text-danger" CommandName="Delete" CommandArgument='<%# Eval("HeldSaleId") %>' CausesValidation="false">
+                                                    <svg class="icon-trash" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                                                        <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6v8h2V9h-2zm4 0v8h2V9h-2z" fill="currentColor" />
+                                                    </svg>
+                                                    <span class="visually-hidden">Delete</span>
+                                                </asp:LinkButton>
+                                            </div>
+                                        </div>
+                                    </ItemTemplate>
+                                </asp:Repeater>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </ContentTemplate>
         </asp:UpdatePanel>
     </div>
