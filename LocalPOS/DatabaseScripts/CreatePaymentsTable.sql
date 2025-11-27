@@ -23,3 +23,26 @@ ELSE
 BEGIN
     PRINT 'TBL_SP_PSO_PAYMENT_2 already exists; skipping create.';
 END;
+
+IF EXISTS (
+    SELECT 1
+    FROM sys.default_constraints
+    WHERE name = 'DF_SP_PAYMENT_CURRENCY'
+      AND parent_object_id = OBJECT_ID('dbo.TBL_SP_PSO_PAYMENT_2')
+)
+BEGIN
+    ALTER TABLE dbo.TBL_SP_PSO_PAYMENT_2
+    DROP CONSTRAINT DF_SP_PAYMENT_CURRENCY;
+END;
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.default_constraints
+    WHERE name = 'DF_SP_PAYMENT_CURRENCY'
+      AND parent_object_id = OBJECT_ID('dbo.TBL_SP_PSO_PAYMENT_2')
+)
+BEGIN
+    ALTER TABLE dbo.TBL_SP_PSO_PAYMENT_2
+    ADD CONSTRAINT DF_SP_PAYMENT_CURRENCY
+    DEFAULT ('AED') FOR CURRENCY_CODE;
+END;
