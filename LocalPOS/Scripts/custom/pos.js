@@ -63,15 +63,38 @@
 
     function cleanupModalArtifacts() {
         var body = document.body;
-        if (body) {
+        if (!body) {
+            return;
+        }
+
+        var openModals = document.querySelectorAll('.modal.show');
+        var hasOpenModal = openModals.length > 0;
+
+        if (hasOpenModal) {
+            body.classList.add('modal-open');
+        } else {
             body.classList.remove('modal-open');
             body.style.removeProperty('padding-right');
         }
-        document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
-            if (backdrop.parentNode) {
-                backdrop.parentNode.removeChild(backdrop);
+
+        var backdrops = document.querySelectorAll('.modal-backdrop');
+        if (hasOpenModal) {
+            if (!backdrops.length) {
+                var backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+            } else {
+                backdrops.forEach(function (backdrop) {
+                    backdrop.classList.add('show');
+                });
             }
-        });
+        } else {
+            backdrops.forEach(function (backdrop) {
+                if (backdrop.parentNode) {
+                    backdrop.parentNode.removeChild(backdrop);
+                }
+            });
+        }
     }
 
     function toggleModalById(id, action) {
@@ -88,9 +111,7 @@
         } else {
             modal.hide();
         }
-        if (action === 'hide') {
-            cleanupModalArtifacts();
-        }
+        cleanupModalArtifacts();
         return modal;
     }
 
@@ -393,6 +414,9 @@
         showPaymentPanel(getSelectedPaymentMethod());
         updateCashChange();
     }
+
+    document.addEventListener('shown.bs.modal', cleanupModalArtifacts);
+    document.addEventListener('hidden.bs.modal', cleanupModalArtifacts);
 
     window.PosUI = {
         showPaymentModal: function () {
