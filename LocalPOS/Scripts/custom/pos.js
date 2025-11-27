@@ -63,6 +63,7 @@
 
     function cleanupModalArtifacts() {
         var body = document.body;
+        var html = document.documentElement;
         if (!body) {
             return;
         }
@@ -74,7 +75,16 @@
             body.classList.add('modal-open');
         } else {
             body.classList.remove('modal-open');
-            body.style.removeProperty('padding-right');
+            ['padding-right', 'overflow', '--bs-body-padding-right'].forEach(function (prop) {
+                body.style.removeProperty(prop);
+            });
+            if (html) {
+                ['padding-right', '--bs-body-padding-right'].forEach(function (prop) {
+                    html.style.removeProperty(prop);
+                });
+            }
+            body.removeAttribute('data-bs-padding-right');
+            body.removeAttribute('data-bs-overflow');
         }
 
         var backdrops = document.querySelectorAll('.modal-backdrop');
