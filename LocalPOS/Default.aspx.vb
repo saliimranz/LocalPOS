@@ -11,6 +11,7 @@ Public Class _Default
     Inherits Page
 
     Private Const CartSessionKey As String = "POS_CART"
+    Private Const HeldCartSessionKey As String = "POS_HELD_CARTS"
     Private ReadOnly _posService As New PosService()
 
     Private ReadOnly Property TaxRate As Decimal
@@ -57,31 +58,6 @@ Public Class _Default
         End Get
         Set(value As Decimal)
             ViewState("DiscountValue") = value
-        End Set
-    End Property
-
-    Private Property ActiveHeldSaleId As Integer?
-        Get
-            If hfActiveHeldSaleId Is Nothing Then
-                Return Nothing
-            End If
-
-            Dim raw = hfActiveHeldSaleId.Value
-            If String.IsNullOrWhiteSpace(raw) Then
-                Return Nothing
-            End If
-
-            Dim parsed As Integer
-            If Integer.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, parsed) Then
-                Return parsed
-            End If
-            Return Nothing
-        End Get
-        Set(value As Integer?)
-            If hfActiveHeldSaleId Is Nothing Then
-                Return
-            End If
-            hfActiveHeldSaleId.Value = If(value.HasValue, value.Value.ToString(CultureInfo.InvariantCulture), String.Empty)
         End Set
     End Property
 
@@ -171,13 +147,6 @@ Public Class _Default
         End If
         Return cart
     End Function
-
-    Private Sub BindHeldBillsList()
-        Dim heldBills = _posService.GetHeldSales()
-        rptHeldBills.DataSource = heldBills
-        rptHeldBills.DataBind()
-        pnlHeldBillsEmpty.Visible = heldBills Is Nothing OrElse heldBills.Count = 0
-    End Sub
 
     Private Function GetDiscountPercent() As Decimal
         Dim percent As Decimal
@@ -459,35 +428,9 @@ Public Class _Default
         AndAlso Not selectedValue.Equals("0", StringComparison.OrdinalIgnoreCase)
     End Function
 
-    Private Sub SetSelectedCustomer(dealerId As Integer)
-        If ddlCustomers Is Nothing OrElse ddlCustomers.Items.Count = 0 Then
-            Return
-        End If
-
-        Dim targetValue = dealerId.ToString(CultureInfo.InvariantCulture)
-        Dim targetItem = ddlCustomers.Items.FindByValue(targetValue)
-
-        If targetItem IsNot Nothing Then
-            ddlCustomers.ClearSelection()
-            targetItem.Selected = True
-        Else
-            Dim walkIn = ddlCustomers.Items.FindByValue("0")
-            If walkIn IsNot Nothing Then
-                ddlCustomers.ClearSelection()
-                walkIn.Selected = True
-            Else
-                ddlCustomers.SelectedIndex = 0
-            End If
-        End If
-
-        UpdatePaymentAvailability()
-        UpdateCustomerProfileButtonState()
-    End Sub
-
 
     Protected Sub btnClearCart_Click(sender As Object, e As EventArgs)
         GetCart().Clear()
-        ActiveHeldSaleId = Nothing
         BindCart()
     End Sub
 
@@ -498,64 +441,24 @@ Public Class _Default
             Return
         End If
 
-        BindCart()
-        Dim itemCount = cart.Sum(Function(ci) ci.Quantity)
-        litHoldSummaryItems.Text = itemCount.ToString(CultureInfo.InvariantCulture)
-        litHoldSummaryTotal.Text = TotalValue.ToString("C", CultureInfo.CurrentCulture)
-        ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowHoldConfirmModal", "PosUI.showHoldConfirm();", True)
-    End Sub
-
-    Protected Sub btnConfirmHold_Click(sender As Object, e As EventArgs)
-        Dim cart = GetCart()
-        If cart.Count = 0 Then
-            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HideHoldConfirmModal", "PosUI.hideHoldConfirm();", True)
-            ShowCartMessage("Cart is empty. Nothing to hold.", False)
-            Return
+        Dim held = TryCast(Session(HeldCartSessionKey), List(Of List(Of CartItem)))
+        If held Is Nothing Then
+            held = New List(Of List(Of CartItem))()
         End If
+        held.Add(cart.Select(Function(ci) ci.Clone()).ToList())
+        Session(HeldCartSessionKey) = held
 
-        BindCart()
-        Dim dealerId As Integer
-        If ddlCustomers.SelectedItem IsNot Nothing Then
-            Integer.TryParse(ddlCustomers.SelectedValue, NumberStyles.Integer, CultureInfo.InvariantCulture, dealerId)
-        End If
-        Dim dealerName = If(ddlCustomers.SelectedItem IsNot Nothing, ddlCustomers.SelectedItem.Text, "Walk-in Customer")
-
-        Dim request As New HoldSaleRequest() With {
-            .HeldSaleId = ActiveHeldSaleId,
-            .DealerId = Math.Max(0, dealerId),
-            .DealerName = dealerName,
-            .DiscountPercent = GetDiscountPercent(),
-            .DiscountAmount = DiscountValue,
-            .TaxPercent = TaxRate * 100D,
-            .TaxAmount = TaxValue,
-            .Subtotal = SubtotalValue,
-            .TotalAmount = TotalValue,
-            .Items = cart.Select(Function(ci) ci.Clone()).ToList(),
-            .CreatedBy = lblCashierName.Text
-        }
-
-        _posService.HoldSale(request)
         cart.Clear()
-        ActiveHeldSaleId = Nothing
-        txtDiscount.Text = "0"
-        ResetPaymentFormState()
         BindCart()
-        ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HideHoldConfirmModal", "PosUI.hideHoldConfirm();", True)
-        ShowCartMessage("Bill held successfully. You can resume it from Held bills.", True)
+        ShowCartMessage($"Cart held successfully. Total held carts: {held.Count}.", True)
     End Sub
 
     Protected Sub btnNewSale_Click(sender As Object, e As EventArgs)
         txtDiscount.Text = "0"
         ResetPaymentFormState()
         GetCart().Clear()
-        ActiveHeldSaleId = Nothing
         BindCart()
         ShowCartMessage("New sale started.", True)
-    End Sub
-
-    Protected Sub btnHeldBills_Click(sender As Object, e As EventArgs)
-        BindHeldBillsList()
-        ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowHeldBillsModal", "PosUI.showHeldBills();", True)
     End Sub
 
     Protected Sub btnCheckout_Click(sender As Object, e As EventArgs)
@@ -688,10 +591,6 @@ Public Class _Default
             End Select
 
             Dim result = _posService.CompleteCheckout(request)
-            If ActiveHeldSaleId.HasValue Then
-                _posService.DeleteHeldSale(ActiveHeldSaleId.Value)
-                ActiveHeldSaleId = Nothing
-            End If
             Dim receiptPath = SaveReceiptPdf(request, result)
             If Not String.IsNullOrWhiteSpace(receiptPath) Then
                 result.ReceiptFilePath = receiptPath
@@ -747,58 +646,5 @@ Public Class _Default
     Private Sub ShowCartMessage(message As String, success As Boolean)
         lblCartMessage.Text = message
         lblCartMessage.CssClass = If(success, "text-success", "text-danger")
-    End Sub
-
-    Protected Sub rptHeldBills_ItemCommand(source As Object, e As RepeaterCommandEventArgs)
-        Dim heldSaleId As Integer
-        If e.CommandArgument Is Nothing OrElse Not Integer.TryParse(e.CommandArgument.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, heldSaleId) Then
-            Return
-        End If
-
-        Select Case e.CommandName
-            Case "Resume"
-                RestoreHeldSale(heldSaleId)
-            Case "Delete"
-                _posService.DeleteHeldSale(heldSaleId)
-                If ActiveHeldSaleId.HasValue AndAlso ActiveHeldSaleId.Value = heldSaleId Then
-                    ActiveHeldSaleId = Nothing
-                End If
-                BindHeldBillsList()
-                ShowCartMessage("Held bill deleted.", True)
-                ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowHeldBillsModal", "PosUI.showHeldBills();", True)
-        End Select
-    End Sub
-
-    Private Sub RestoreHeldSale(heldSaleId As Integer)
-        Dim detail = _posService.GetHeldSale(heldSaleId)
-        If detail Is Nothing Then
-            BindHeldBillsList()
-            ShowCartMessage("Held bill was not found. It may have already been removed.", False)
-            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowHeldBillsModal", "PosUI.showHeldBills();", True)
-            Return
-        End If
-
-        Dim cart = GetCart()
-        cart.Clear()
-        If detail.Items IsNot Nothing Then
-            For Each item In detail.Items
-                cart.Add(New CartItem() With {
-                    .ProductId = item.ProductId,
-                    .SkuCode = item.SkuCode,
-                    .Name = item.Name,
-                    .UnitPrice = item.UnitPrice,
-                    .Quantity = item.Quantity,
-                    .TaxRate = item.TaxRate,
-                    .Thumbnail = item.ThumbnailUrl
-                })
-            Next
-        End If
-
-        txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
-        ActiveHeldSaleId = detail.HeldSaleId
-        SetSelectedCustomer(detail.DealerId)
-        BindCart()
-        ShowCartMessage($"Held bill {detail.ReferenceCode} restored into the cart.", True)
-        ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HideHeldBillsModal", "PosUI.hideHeldBills();", True)
     End Sub
 End Class

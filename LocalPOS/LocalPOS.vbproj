@@ -225,7 +225,6 @@
     <Compile Include="App_Start\BundleConfig.vb" />
     <Compile Include="App_Start\RouteConfig.vb" />
     <Compile Include="Data\DealerRepository.vb" />
-    <Compile Include="Data\HeldSaleRepository.vb" />
     <Compile Include="Data\OrderRepository.vb" />
     <Compile Include="Data\ProductRepository.vb" />
     <Compile Include="Data\SqlRepositoryBase.vb" />
@@ -234,10 +233,6 @@
     <Compile Include="Models\CheckoutRequest.vb" />
     <Compile Include="Models\CheckoutResult.vb" />
     <Compile Include="Models\Dealer.vb" />
-    <Compile Include="Models\HeldSaleDetail.vb" />
-    <Compile Include="Models\HeldSaleItem.vb" />
-    <Compile Include="Models\HeldSaleSummary.vb" />
-    <Compile Include="Models\HoldSaleRequest.vb" />
     <Compile Include="Models\OrderPaymentRecord.vb" />
     <Compile Include="Models\PendingPaymentContext.vb" />
     <Compile Include="Models\PendingPaymentRequest.vb" />
@@ -367,6 +362,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="product media\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
