@@ -45,6 +45,12 @@
                                 <span class="add-product-icon" aria-hidden="true">+</span>
                                 Add product
                             </asp:HyperLink>
+                            <asp:Button runat="server"
+                                ID="btnHeldBills"
+                                CssClass="btn btn-purple btn-held-bills"
+                                Text="Held bills"
+                                OnClick="btnHeldBills_Click"
+                                CausesValidation="false" />
                         </div>
 
                         <div class="category-pills">
@@ -170,9 +176,8 @@
 
                         <div class="action-buttons">
                             <asp:Button runat="server" ID="btnHold" CssClass="btn btn-outline" Text="Hold" OnClick="btnHold_Click" CausesValidation="false" />
-                            <asp:Button runat="server" ID="btnHeldBills" CssClass="btn btn-outline" Text="Held bills" OnClick="btnHeldBills_Click" CausesValidation="false" />
                             <asp:Button runat="server" ID="btnNewSale" CssClass="btn btn-outline" Text="New" OnClick="btnNewSale_Click" CausesValidation="false" />
-                            <asp:Button runat="server" ID="btnCheckout" CssClass="btn btn-primary" Text="Checkout" OnClick="btnCheckout_Click" CausesValidation="false" />
+                            <asp:Button runat="server" ID="btnCheckout" CssClass="btn btn-primary btn-action-checkout" Text="Checkout" OnClick="btnCheckout_Click" CausesValidation="false" />
                         </div>
                     </div>
                 </div>
