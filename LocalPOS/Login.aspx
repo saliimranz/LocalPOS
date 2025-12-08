@@ -8,11 +8,6 @@
                     <span class="visual-chip">Retail POS Suite</span>
                     <h1>Alanin LML</h1>
                     <p class="visual-copy">Lightweight cashier workflows with instant sync, beautiful receipts, and zero guesswork.</p>
-                    <ul class="visual-highlights">
-                        <li>Realtime drawer totals</li>
-                        <li>Tap-to-print receipts</li>
-                        <li>24/7 cloud backups</li>
-                    </ul>
                 </div>
             </div>
             <div class="login-card">

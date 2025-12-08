@@ -1,12 +1,18 @@
 Imports System
 Imports System.Web
 Imports LocalPOS.LocalPOS.Services
+Imports System.Web.UI.HtmlControls
 
 Public Partial Class Login
     Inherits Page
 
     Private Const AllowedUsername As String = "Alain_lml"
     Private Const AllowedPassword As String = "Lml_786@110@234"
+
+    Protected Overrides Sub OnInit(e As EventArgs)
+        MyBase.OnInit(e)
+        RegisterLoginStyles()
+    End Sub
 
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
         If Not IsPostBack Then
@@ -46,5 +52,22 @@ Public Partial Class Login
 
         Response.Redirect(target, False)
         Context.ApplicationInstance.CompleteRequest()
+    End Sub
+
+    Private Sub RegisterLoginStyles()
+        If Header Is Nothing Then
+            Return
+        End If
+
+        If Header.FindControl("LoginStyles") IsNot Nothing Then
+            Return
+        End If
+
+        Dim link = New HtmlLink()
+        link.ID = "LoginStyles"
+        link.Href = ResolveClientUrl("~/Content/login.css")
+        link.Attributes("rel") = "stylesheet"
+        link.Attributes("type") = "text/css"
+        Header.Controls.Add(link)
     End Sub
 End Class
