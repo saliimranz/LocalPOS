@@ -1,1 +1,1 @@
-<%@ WebHandler Language="VB" Class="LocalPOS.ReceiptDownloadHandler" %>
+<%@ WebHandler Language="VB" Class="LocalPOS.LocalPOS.ReceiptDownloadHandler" %>

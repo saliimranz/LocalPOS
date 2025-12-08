@@ -44,6 +44,11 @@ Partial Public Class SalesHistory
     Protected WithEvents btnApplyFilters As Global.System.Web.UI.WebControls.Button
 
     '''<summary>
+    '''Control lblFilterMessage.
+    '''</summary>
+    Protected WithEvents lblFilterMessage As Global.System.Web.UI.WebControls.Label
+
+    '''<summary>
     '''Control litOrderCount.
     '''</summary>
     Protected WithEvents litOrderCount As Global.System.Web.UI.WebControls.Literal

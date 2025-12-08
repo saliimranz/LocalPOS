@@ -4,7 +4,7 @@ Imports System.Web
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
-Namespace LocalPOS
+Namespace LocalPOS.LocalPOS
     Public Class ReceiptDownloadHandler
         Implements IHttpHandler
 

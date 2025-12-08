@@ -22,8 +22,14 @@ Public Class SalesHistory
     End Sub
 
     Protected Sub ddlDateRange_SelectedIndexChanged(sender As Object, e As EventArgs)
+        lblFilterMessage.Text = String.Empty
         ApplyQuickRange(ddlDateRange.SelectedValue)
-        BindSales()
+
+        If Not String.Equals(ddlDateRange.SelectedValue, "Custom", StringComparison.OrdinalIgnoreCase) Then
+            BindSales()
+        Else
+            lblFilterMessage.Text = "Select your custom range and click Apply."
+        End If
     End Sub
 
     Protected Sub btnApplyFilters_Click(sender As Object, e As EventArgs)
@@ -34,36 +40,51 @@ Public Class SalesHistory
         Dim today = DateTime.Today
         Select Case mode
             Case "Yesterday"
-                Dim value = today.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-                txtFromDate.Text = value
-                txtToDate.Text = value
+                Dim target = today.AddDays(-1)
+                SetDateInputs(target, target)
             Case "Custom"
-                If String.IsNullOrWhiteSpace(txtFromDate.Text) Then
-                    txtFromDate.Text = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-                End If
-                If String.IsNullOrWhiteSpace(txtToDate.Text) Then
-                    txtToDate.Text = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                If String.IsNullOrWhiteSpace(txtFromDate.Text) AndAlso String.IsNullOrWhiteSpace(txtToDate.Text) Then
+                    SetDateInputs(today, today)
                 End If
             Case Else
-                txtFromDate.Text = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-                txtToDate.Text = today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                SetDateInputs(today, today)
         End Select
     End Sub
 
     Private Function BuildFilter() As SalesHistoryFilter
+        lblFilterMessage.Text = String.Empty
         Dim filter As New SalesHistoryFilter()
-        If Not String.Equals(ddlDateRange.SelectedValue, "Custom", StringComparison.OrdinalIgnoreCase) Then
-            ApplyQuickRange(ddlDateRange.SelectedValue)
-        End If
-        filter.FromDate = ParseDate(txtFromDate.Text)
-        filter.ToDate = ParseDate(txtToDate.Text)
+        Dim today = DateTime.Today
 
-        Dim orderSearch = txtOrderSearch.Text
-        If Not String.IsNullOrWhiteSpace(orderSearch) Then
-            filter.OrderNumber = orderSearch.Trim()
-        Else
-            filter.OrderNumber = String.Empty
-        End If
+        Select Case ddlDateRange.SelectedValue
+            Case "Yesterday"
+                Dim target = today.AddDays(-1)
+                SetDateInputs(target, target)
+                filter.FromDate = target
+                filter.ToDate = target
+            Case "Custom"
+                Dim fromDate = ParseDate(txtFromDate.Text)
+                Dim toDate = ParseDate(txtToDate.Text)
+
+                If Not fromDate.HasValue OrElse Not toDate.HasValue Then
+                    lblFilterMessage.Text = "Select both From and To dates for a custom range."
+                    Return Nothing
+                End If
+
+                If fromDate.Value > toDate.Value Then
+                    lblFilterMessage.Text = "From date cannot be later than To date."
+                    Return Nothing
+                End If
+
+                filter.FromDate = fromDate
+                filter.ToDate = toDate
+            Case Else
+                SetDateInputs(today, today)
+                filter.FromDate = today
+                filter.ToDate = today
+        End Select
+
+        filter.OrderNumber = txtOrderSearch.Text.Trim()
         Return filter
     End Function
 
@@ -84,6 +105,16 @@ Public Class SalesHistory
 
     Private Sub BindSales()
         Dim filter = BuildFilter()
+        If filter Is Nothing Then
+            rptSales.DataSource = Nothing
+            rptSales.DataBind()
+            pnlNoResults.Visible = True
+            litOrderCount.Text = "0"
+            litGrossTotal.Text = FormatCurrency(0D)
+            litOutstandingTotal.Text = FormatCurrency(0D)
+            Return
+        End If
+
         Dim orders = _posService.GetSalesHistory(filter)
         If orders Is Nothing Then
             orders = New List(Of SalesHistoryOrder)()
@@ -138,6 +169,11 @@ Public Class SalesHistory
 
         Return ResolveClientUrl($"~/ReceiptDownload.ashx?mode=sale&orderId={orderId}")
     End Function
+
+    Private Sub SetDateInputs(fromDate As DateTime?, toDate As DateTime?)
+        txtFromDate.Text = If(fromDate.HasValue, fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), String.Empty)
+        txtToDate.Text = If(toDate.HasValue, toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), String.Empty)
+    End Sub
 
     Private Shared Function ConvertToDecimal(value As Object) As Decimal
         If value Is Nothing OrElse value Is DBNull.Value Then

@@ -49,6 +49,7 @@
                                 <asp:Button runat="server" ID="btnApplyFilters" CssClass="btn btn-primary" Text="Apply" OnClick="btnApplyFilters_Click" />
                             </div>
                         </div>
+                        <asp:Label runat="server" ID="lblFilterMessage" CssClass="text-danger small d-block mt-2"></asp:Label>
                     </div>
                 </div>
 
