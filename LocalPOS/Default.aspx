@@ -11,8 +11,8 @@
                 <div id="currentDate"><asp:Literal ID="litDate" runat="server"></asp:Literal></div>
                 <div id="currentTime"><asp:Literal ID="litTime" runat="server"></asp:Literal></div>
             </div>
-            <div class="user-menu-wrapper" data-user-menu-wrapper>
-                <button type="button" class="user-pill user-menu-toggle" data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
+            <div class="user-menu-wrapper pos-user-menu" data-user-menu-wrapper>
+                <button type="button" class="user-pill user-menu-toggle pos-user-toggle" data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
                     <div class="user-avatar">
                         <asp:Literal runat="server" ID="litCashierInitials"></asp:Literal>
                     </div>
@@ -22,8 +22,11 @@
                     </div>
                     <span class="user-menu-caret" aria-hidden="true"></span>
                 </button>
-                <div class="user-menu-dropdown" data-user-menu-panel>
-                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item" OnClick="btnLogout_Click" CausesValidation="false">Log out</asp:LinkButton>
+                <div class="user-menu-dropdown pos-user-dropdown" data-user-menu-panel>
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item pos-user-item" OnClick="btnLogout_Click" CausesValidation="false">
+                        <span class="logout-icon" aria-hidden="true"></span>
+                        <span>Log out</span>
+                    </asp:LinkButton>
                 </div>
             </div>
         </div>
@@ -171,7 +174,7 @@
                                 <label class="form-label fw-semibold mb-0">Discount</label>
                                 <asp:DropDownList runat="server"
                                     ID="ddlDiscountMode"
-                                    CssClass="discount-type-select"
+                                    CssClass="discount-type-select pos-select-chip"
                                     AutoPostBack="true"
                                     OnSelectedIndexChanged="ddlDiscountMode_SelectedIndexChanged">
                                     <asp:ListItem Text="Percentage" Value="Percentage" Selected="True"></asp:ListItem>
@@ -180,7 +183,7 @@
                             </div>
                             <asp:TextBox runat="server"
                                 ID="txtDiscount"
-                                CssClass="discount-input"
+                                CssClass="discount-input pos-discount-input"
                                 TextMode="Number"
                                 AutoPostBack="true"
                                 Min="0"
