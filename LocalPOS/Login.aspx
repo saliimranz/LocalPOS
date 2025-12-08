@@ -3,19 +3,29 @@
 <asp:Content ID="BodyContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="login-page">
         <div class="login-shell">
-            <div class="login-brand">
-                <div class="brand-mark">
-                    <div class="brand-mark-glow"></div>
-                    <span class="brand-mark-text">LP</span>
-                </div>
-                <div>
-                    <div class="terminal-name mb-1">LocalPOS Console</div>
-                    <div class="location-info">Secure cashier access</div>
+            <div class="login-visual">
+                <div class="login-visual-content">
+                    <span class="visual-chip">Retail POS Suite</span>
+                    <h1>Alanin LML</h1>
+                    <p class="visual-copy">Lightweight cashier workflows with instant sync, beautiful receipts, and zero guesswork.</p>
+                    <ul class="visual-highlights">
+                        <li>Realtime drawer totals</li>
+                        <li>Tap-to-print receipts</li>
+                        <li>24/7 cloud backups</li>
+                    </ul>
                 </div>
             </div>
             <div class="login-card">
+                <div class="login-card-header">
+                    <div class="brand-circle">LP</div>
+                    <div>
+                        <div class="terminal-name">LocalPOS Console</div>
+                        <div class="location-info">Secure cashier access</div>
+                    </div>
+                </div>
+
                 <h2 class="login-title">Sign in</h2>
-                <p class="login-subtitle">Access your cashier console to complete sales.</p>
+                <p class="login-subtitle">Use your operator credentials to continue.</p>
 
                 <asp:Label runat="server" ID="lblError" CssClass="alert alert-danger d-none"></asp:Label>
 
