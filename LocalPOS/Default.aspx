@@ -11,11 +11,17 @@
                 <div id="currentDate"><asp:Literal ID="litDate" runat="server"></asp:Literal></div>
                 <div id="currentTime"><asp:Literal ID="litTime" runat="server"></asp:Literal></div>
             </div>
-            <div class="user-pill">
-                <div class="user-avatar">JS</div>
-                <div>
-                    <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
-                    <small>Cashier</small>
+            <div class="user-menu" data-user-menu>
+                <button type="button" class="user-pill" id="btnUserMenuToggle" data-user-menu-toggle="true" aria-haspopup="true" aria-expanded="false">
+                    <div class="user-avatar">AD</div>
+                    <div>
+                        <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
+                        <small>Cashier</small>
+                    </div>
+                    <span class="user-pill-caret" aria-hidden="true"></span>
+                </button>
+                <div class="user-menu-dropdown" aria-hidden="true">
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-action" OnClick="btnLogout_Click" CausesValidation="false">Logout</asp:LinkButton>
                 </div>
             </div>
         </div>
@@ -158,9 +164,15 @@
                             <p>Cart is empty. Add products to start.</p>
                         </asp:Panel>
 
-                        <div>
-                            <label class="form-label fw-semibold">Discount %</label>
-                            <asp:TextBox runat="server" ID="txtDiscount" CssClass="discount-input" TextMode="Number" AutoPostBack="true" Min="0" Max="100" step="0.5" OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
+                        <div class="cart-discount-control">
+                            <label class="form-label fw-semibold">Discount</label>
+                            <div class="discount-field-group">
+                                <asp:TextBox runat="server" ID="txtDiscount" CssClass="discount-input" TextMode="Number" AutoPostBack="true" min="0" step="0.01" OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
+                                <asp:DropDownList runat="server" ID="ddlDiscountMode" CssClass="form-select discount-mode-select" AutoPostBack="true" OnSelectedIndexChanged="ddlDiscountMode_SelectedIndexChanged">
+                                    <asp:ListItem Text="Percentage" Value="Percent" Selected="True"></asp:ListItem>
+                                    <asp:ListItem Text="Value" Value="Amount"></asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
                         </div>
 
                         <div class="summary-card">
