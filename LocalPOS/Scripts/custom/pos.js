@@ -372,7 +372,60 @@
         setupCashQuickButtons(cashInput);
     }
 
+    function setUserMenuState(wrapper, isOpen) {
+        if (!wrapper) {
+            return;
+        }
+        wrapper.classList.toggle('is-open', Boolean(isOpen));
+        var toggle = wrapper.querySelector('[data-user-menu-toggle]');
+        var panel = wrapper.querySelector('[data-user-menu-panel]');
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+        if (panel) {
+            panel.hidden = !isOpen;
+        }
+    }
+
+    function closeUserMenus(except) {
+        document.querySelectorAll('[data-user-menu-wrapper].is-open').forEach(function (wrapper) {
+            if (wrapper === except) {
+                return;
+            }
+            setUserMenuState(wrapper, false);
+        });
+    }
+
+    function setupUserMenus() {
+        var wrappers = document.querySelectorAll('[data-user-menu-wrapper]');
+        if (!wrappers.length) {
+            return;
+        }
+        wrappers.forEach(function (wrapper) {
+            if (wrapper.dataset.userMenuWired === 'true') {
+                return;
+            }
+            var toggle = wrapper.querySelector('[data-user-menu-toggle]');
+            var panel = wrapper.querySelector('[data-user-menu-panel]');
+            if (!toggle || !panel) {
+                return;
+            }
+            panel.hidden = !wrapper.classList.contains('is-open');
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                var willOpen = !wrapper.classList.contains('is-open');
+                if (willOpen) {
+                    closeUserMenus(wrapper);
+                }
+                setUserMenuState(wrapper, willOpen);
+            });
+            wrapper.dataset.userMenuWired = 'true';
+        });
+    }
+
     function wirePaymentOptions() {
+        setupUserMenus();
         var paymentList = document.getElementById('rblPaymentMethod');
         if (paymentList) {
             if (paymentList.dataset.posPaymentWired !== 'true') {
@@ -429,6 +482,21 @@
 
     document.addEventListener('shown.bs.modal', cleanupModalArtifacts);
     document.addEventListener('hidden.bs.modal', cleanupModalArtifacts);
+
+    document.addEventListener('click', function (event) {
+        var target = event.target;
+        document.querySelectorAll('[data-user-menu-wrapper].is-open').forEach(function (wrapper) {
+            if (!wrapper.contains(target)) {
+                setUserMenuState(wrapper, false);
+            }
+        });
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeUserMenus();
+        }
+    });
 
     function performReceiptDownload(url) {
         if (!url) {

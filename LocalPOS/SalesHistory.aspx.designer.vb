@@ -14,6 +14,16 @@ Partial Public Class SalesHistory
     Protected WithEvents lblCashierName As Global.System.Web.UI.WebControls.Label
 
     '''<summary>
+    '''Control litCashierInitials.
+    '''</summary>
+    Protected WithEvents litCashierInitials As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''Control btnLogout.
+    '''</summary>
+    Protected WithEvents btnLogout As Global.System.Web.UI.WebControls.LinkButton
+
+    '''<summary>
     '''Control upSalesHistory.
     '''</summary>
     Protected WithEvents upSalesHistory As Global.System.Web.UI.UpdatePanel

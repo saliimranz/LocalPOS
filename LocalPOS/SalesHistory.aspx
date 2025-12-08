@@ -11,11 +11,19 @@
                 <div class="terminal-name">Sales</div>
                 <div class="location-info text-muted">Review every order, payment, and receipt in one place.</div>
             </div>
-            <div class="user-pill">
-                <div class="user-avatar">SH</div>
-                <div>
-                    <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
-                    <small>Cashier</small>
+            <div class="user-menu-wrapper" data-user-menu-wrapper>
+                <button type="button" class="user-pill user-menu-toggle" data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
+                    <div class="user-avatar">
+                        <asp:Literal runat="server" ID="litCashierInitials"></asp:Literal>
+                    </div>
+                    <div>
+                        <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
+                        <small>Cashier</small>
+                    </div>
+                    <span class="user-menu-caret" aria-hidden="true"></span>
+                </button>
+                <div class="user-menu-dropdown" data-user-menu-panel hidden>
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item" OnClick="btnLogout_Click" CausesValidation="false">Log out</asp:LinkButton>
                 </div>
             </div>
         </div>

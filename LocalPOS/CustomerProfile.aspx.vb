@@ -27,9 +27,20 @@ Public Partial Class CustomerProfile
         hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
         If Not IsPostBack Then
             lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
+            If litCashierInitials IsNot Nothing Then
+                litCashierInitials.Text = BuildInitials(lblCashierName.Text)
+            End If
             hfIsCorporateCustomer.Value = "false"
             LoadCustomer()
         End If
+    End Sub
+
+    Protected Sub btnLogout_Click(sender As Object, e As EventArgs)
+        AuthManager.SignOut(Context)
+        Session.Clear()
+        Session.Abandon()
+        Response.Redirect("~/Login.aspx", False)
+        Context.ApplicationInstance.CompleteRequest()
     End Sub
 
     Private Sub LoadCustomer()
@@ -115,6 +126,30 @@ Public Partial Class CustomerProfile
                 Return converted
             End If
             Return 0D
+        End Function
+
+        Private Shared Function BuildInitials(name As String) As String
+            If String.IsNullOrWhiteSpace(name) Then
+                Return "AD"
+            End If
+
+            Dim parts = name.Split(New Char() {" "c}, StringSplitOptions.RemoveEmptyEntries)
+            If parts.Length = 0 Then
+                Return "AD"
+            End If
+
+            If parts.Length = 1 Then
+                Dim token = parts(0).Trim()
+                If token.Length = 0 Then
+                    Return "AD"
+                End If
+                Dim length = Math.Min(2, token.Length)
+                Return token.Substring(0, length).ToUpperInvariant()
+            End If
+
+            Dim firstChar = Char.ToUpperInvariant(parts(0)(0))
+            Dim lastChar = Char.ToUpperInvariant(parts(parts.Length - 1)(0))
+            Return $"{firstChar}{lastChar}"
         End Function
 
         Protected Sub rptOrders_ItemCommand(source As Object, e As RepeaterCommandEventArgs)

@@ -16,9 +16,20 @@ Public Class SalesHistory
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
         If Not IsPostBack Then
             lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
+            If litCashierInitials IsNot Nothing Then
+                litCashierInitials.Text = BuildInitials(lblCashierName.Text)
+            End If
             ApplyQuickRange("Today")
             BindSales()
         End If
+    End Sub
+
+    Protected Sub btnLogout_Click(sender As Object, e As EventArgs)
+        AuthManager.SignOut(Context)
+        Session.Clear()
+        Session.Abandon()
+        Response.Redirect("~/Login.aspx", False)
+        Context.ApplicationInstance.CompleteRequest()
     End Sub
 
     Protected Sub ddlDateRange_SelectedIndexChanged(sender As Object, e As EventArgs)
@@ -174,6 +185,30 @@ Public Class SalesHistory
         txtFromDate.Text = If(fromDate.HasValue, fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), String.Empty)
         txtToDate.Text = If(toDate.HasValue, toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), String.Empty)
     End Sub
+
+    Private Shared Function BuildInitials(name As String) As String
+        If String.IsNullOrWhiteSpace(name) Then
+            Return "AD"
+        End If
+
+        Dim parts = name.Split(New Char() {" "c}, StringSplitOptions.RemoveEmptyEntries)
+        If parts.Length = 0 Then
+            Return "AD"
+        End If
+
+        If parts.Length = 1 Then
+            Dim token = parts(0).Trim()
+            If token.Length = 0 Then
+                Return "AD"
+            End If
+            Dim length = Math.Min(2, token.Length)
+            Return token.Substring(0, length).ToUpperInvariant()
+        End If
+
+        Dim firstChar = Char.ToUpperInvariant(parts(0)(0))
+        Dim lastChar = Char.ToUpperInvariant(parts(parts.Length - 1)(0))
+        Return $"{firstChar}{lastChar}"
+    End Function
 
     Private Shared Function ConvertToDecimal(value As Object) As Decimal
         If value Is Nothing OrElse value Is DBNull.Value Then

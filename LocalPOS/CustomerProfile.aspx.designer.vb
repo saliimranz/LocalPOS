@@ -13,6 +13,10 @@ Partial Public Class CustomerProfile
 
     Protected WithEvents lblCashierName As Global.System.Web.UI.WebControls.Label
 
+    Protected WithEvents litCashierInitials As Global.System.Web.UI.WebControls.Literal
+
+    Protected WithEvents btnLogout As Global.System.Web.UI.WebControls.LinkButton
+
     Protected WithEvents lblPageMessage As Global.System.Web.UI.WebControls.Label
 
     Protected WithEvents litCustomerContact As Global.System.Web.UI.WebControls.Literal

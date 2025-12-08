@@ -11,11 +11,19 @@
                 <div id="currentDate"><asp:Literal ID="litDate" runat="server"></asp:Literal></div>
                 <div id="currentTime"><asp:Literal ID="litTime" runat="server"></asp:Literal></div>
             </div>
-            <div class="user-pill">
-                <div class="user-avatar">JS</div>
-                <div>
-                    <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
-                    <small>Cashier</small>
+            <div class="user-menu-wrapper" data-user-menu-wrapper>
+                <button type="button" class="user-pill user-menu-toggle" data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
+                    <div class="user-avatar">
+                        <asp:Literal runat="server" ID="litCashierInitials"></asp:Literal>
+                    </div>
+                    <div>
+                        <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
+                        <small>Cashier</small>
+                    </div>
+                    <span class="user-menu-caret" aria-hidden="true"></span>
+                </button>
+                <div class="user-menu-dropdown" data-user-menu-panel hidden>
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item" OnClick="btnLogout_Click" CausesValidation="false">Log out</asp:LinkButton>
                 </div>
             </div>
         </div>
@@ -158,9 +166,26 @@
                             <p>Cart is empty. Add products to start.</p>
                         </asp:Panel>
 
-                        <div>
-                            <label class="form-label fw-semibold">Discount %</label>
-                            <asp:TextBox runat="server" ID="txtDiscount" CssClass="discount-input" TextMode="Number" AutoPostBack="true" Min="0" Max="100" step="0.5" OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
+                        <div class="discount-control">
+                            <label class="form-label fw-semibold">Discount</label>
+                            <div class="discount-input-group">
+                                <asp:TextBox runat="server"
+                                    ID="txtDiscount"
+                                    CssClass="discount-input"
+                                    TextMode="Number"
+                                    AutoPostBack="true"
+                                    Min="0"
+                                    step="0.01"
+                                    OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
+                                <asp:DropDownList runat="server"
+                                    ID="ddlDiscountMode"
+                                    CssClass="discount-type-select"
+                                    AutoPostBack="true"
+                                    OnSelectedIndexChanged="ddlDiscountMode_SelectedIndexChanged">
+                                    <asp:ListItem Text="Percentage" Value="Percentage" Selected="True"></asp:ListItem>
+                                    <asp:ListItem Text="Value" Value="Amount"></asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
                         </div>
 
                         <div class="summary-card">
