@@ -51,6 +51,24 @@ Namespace LocalPOS.Services
             Return _orderRepository.GetCustomerOrders(dealerId)
         End Function
 
+        Public Function GetCustomerLedger(dealerId As Integer) As CustomerLedgerReport
+            Dim dealer = _dealerRepository.GetDealer(dealerId)
+            If dealer Is Nothing Then
+                Return Nothing
+            End If
+
+            Dim report = _orderRepository.GetCustomerLedger(dealerId)
+            If report Is Nothing Then
+                report = New CustomerLedgerReport()
+            End If
+
+            report.DealerId = dealer.Id
+            report.DealerCode = dealer.DealerCode
+            report.DealerName = dealer.DealerName
+
+            Return report
+        End Function
+
         Public Function GetSalesHistory(filter As SalesHistoryFilter) As IList(Of SalesHistoryOrder)
             Return _orderRepository.GetSalesHistory(filter)
         End Function

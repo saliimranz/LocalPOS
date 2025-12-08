@@ -320,6 +320,145 @@ ORDER BY o.CDATED DESC"
             Return orders
         End Function
 
+        Public Function GetCustomerLedger(dealerId As Integer) As CustomerLedgerReport
+            Dim report As New CustomerLedgerReport() With {
+                .DealerId = dealerId,
+                .OpeningBalance = 0D
+            }
+
+            Dim orders As IList(Of LedgerOrderSnapshot)
+            Dim paymentsLookup As Dictionary(Of Integer, List(Of LedgerPaymentSnapshot))
+
+            Using connection = CreateConnection()
+                orders = LoadLedgerOrders(connection, dealerId)
+                paymentsLookup = LoadLedgerPayments(connection, dealerId)
+            End Using
+
+            If orders Is Nothing OrElse orders.Count = 0 Then
+                report.PendingAmount = 0D
+                Return report
+            End If
+
+            Dim runningBalance = report.OpeningBalance
+            Dim lastPaymentDate As Nullable(Of DateTime) = Nothing
+
+            For Each order In orders
+                Dim roundedTotal = Decimal.Round(order.TotalAmount, 2, MidpointRounding.AwayFromZero)
+                runningBalance -= roundedTotal
+
+                report.Entries.Add(New CustomerLedgerEntry() With {
+                    .OrderId = order.OrderId,
+                    .EntryDate = order.OrderDate,
+                    .Description = $"Order No. {order.OrderNumber}",
+                    .AmountDue = roundedTotal,
+                    .PaymentReceived = 0D,
+                    .BalanceAfterEntry = runningBalance,
+                    .EntryType = CustomerLedgerEntryType.Order
+                })
+
+                Dim orderPayments As List(Of LedgerPaymentSnapshot) = Nothing
+                If paymentsLookup IsNot Nothing AndAlso paymentsLookup.TryGetValue(order.OrderId, orderPayments) Then
+                    For Each payment In orderPayments
+                        Dim paidAmount = Decimal.Round(payment.PaidAmount, 2, MidpointRounding.AwayFromZero)
+                        If paidAmount = 0D Then
+                            Continue For
+                        End If
+
+                        runningBalance += paidAmount
+                        Dim description = payment.PaymentReference
+                        If String.IsNullOrWhiteSpace(description) Then
+                            description = $"Payment #{payment.PaymentId}"
+                        End If
+
+                        report.Entries.Add(New CustomerLedgerEntry() With {
+                            .OrderId = order.OrderId,
+                            .PaymentId = payment.PaymentId,
+                            .EntryDate = payment.CreatedOn,
+                            .Description = description,
+                            .AmountDue = 0D,
+                            .PaymentReceived = paidAmount,
+                            .BalanceAfterEntry = runningBalance,
+                            .EntryType = CustomerLedgerEntryType.Payment
+                        })
+
+                        If Not lastPaymentDate.HasValue OrElse payment.CreatedOn > lastPaymentDate.Value Then
+                            lastPaymentDate = payment.CreatedOn
+                        End If
+                    Next
+                End If
+            Next
+
+            report.LastPaymentDate = lastPaymentDate
+            Dim pending = If(runningBalance < 0D, -runningBalance, 0D)
+            report.PendingAmount = Decimal.Round(pending, 2, MidpointRounding.AwayFromZero)
+            Return report
+        End Function
+
+        Private Function LoadLedgerOrders(connection As SqlConnection, dealerId As Integer) As IList(Of LedgerOrderSnapshot)
+            Dim orders As New List(Of LedgerOrderSnapshot)()
+            Using command = connection.CreateCommand()
+                command.CommandText =
+"SELECT 
+    o.ID,
+    ISNULL(o.SPPSOID, '') AS ORDER_NUMBER,
+    ISNULL(o.CDATED, GETDATE()) AS ORDER_DATE,
+    ISNULL(o.TP, 0) AS TOTAL_AMOUNT
+FROM dbo.TBL_SP_PSO_ORDER o
+WHERE ((@DealerId = 0 AND ISNULL(o.DID, 0) = 0) OR o.DID = @DealerId)
+ORDER BY o.CDATED ASC, o.ID ASC"
+                command.Parameters.AddWithValue("@DealerId", dealerId)
+                Using reader = command.ExecuteReader()
+                    While reader.Read()
+                        orders.Add(New LedgerOrderSnapshot() With {
+                            .OrderId = reader.GetInt32(reader.GetOrdinal("ID")),
+                            .OrderNumber = reader.GetString(reader.GetOrdinal("ORDER_NUMBER")),
+                            .OrderDate = reader.GetDateTime(reader.GetOrdinal("ORDER_DATE")),
+                            .TotalAmount = reader.GetDecimal(reader.GetOrdinal("TOTAL_AMOUNT"))
+                        })
+                    End While
+                End Using
+            End Using
+            Return orders
+        End Function
+
+        Private Function LoadLedgerPayments(connection As SqlConnection, dealerId As Integer) As Dictionary(Of Integer, List(Of LedgerPaymentSnapshot))
+            Dim lookup As New Dictionary(Of Integer, List(Of LedgerPaymentSnapshot))()
+            Using command = connection.CreateCommand()
+                command.CommandText =
+"SELECT 
+    p.ID,
+    p.ORDER_ID,
+    ISNULL(p.PAYMENT_REFERENCE, '') AS PAYMENT_REFERENCE,
+    ISNULL(p.PAID_AMOUNT, 0) AS PAID_AMOUNT,
+    ISNULL(p.CREATED_ON, GETDATE()) AS CREATED_ON
+FROM dbo.TBL_SP_PSO_PAYMENT_2 p
+INNER JOIN dbo.TBL_SP_PSO_ORDER o ON o.ID = p.ORDER_ID
+WHERE ((@DealerId = 0 AND ISNULL(o.DID, 0) = 0) OR o.DID = @DealerId)
+ORDER BY o.CDATED ASC, o.ID ASC, p.CREATED_ON ASC, p.ID ASC"
+                command.Parameters.AddWithValue("@DealerId", dealerId)
+                Using reader = command.ExecuteReader()
+                    While reader.Read()
+                        Dim snapshot As New LedgerPaymentSnapshot() With {
+                            .PaymentId = reader.GetInt32(reader.GetOrdinal("ID")),
+                            .OrderId = reader.GetInt32(reader.GetOrdinal("ORDER_ID")),
+                            .PaymentReference = reader.GetString(reader.GetOrdinal("PAYMENT_REFERENCE")),
+                            .PaidAmount = reader.GetDecimal(reader.GetOrdinal("PAID_AMOUNT")),
+                            .CreatedOn = reader.GetDateTime(reader.GetOrdinal("CREATED_ON"))
+                        }
+
+                        Dim bucket As List(Of LedgerPaymentSnapshot) = Nothing
+                        If Not lookup.TryGetValue(snapshot.OrderId, bucket) Then
+                            bucket = New List(Of LedgerPaymentSnapshot)()
+                            lookup(snapshot.OrderId) = bucket
+                        End If
+                        bucket.Add(snapshot)
+                    End While
+                End Using
+            End Using
+
+            Return lookup
+        End Function
+
         Public Function GetReceivables() As IList(Of ReceivableReportRow)
             Dim receivables As New List(Of ReceivableReportRow)()
             Using connection = CreateConnection()
@@ -1157,6 +1296,21 @@ ORDER BY CREATED_ON DESC, ID DESC"
             Public Property TaxPercent As Decimal
             Public Property TaxAmount As Decimal
             Public Property TotalAmount As Decimal
+        End Class
+
+        Private Class LedgerOrderSnapshot
+            Public Property OrderId As Integer
+            Public Property OrderNumber As String
+            Public Property OrderDate As DateTime
+            Public Property TotalAmount As Decimal
+        End Class
+
+        Private Class LedgerPaymentSnapshot
+            Public Property PaymentId As Integer
+            Public Property OrderId As Integer
+            Public Property PaymentReference As String
+            Public Property PaidAmount As Decimal
+            Public Property CreatedOn As DateTime
         End Class
     End Class
 End Namespace

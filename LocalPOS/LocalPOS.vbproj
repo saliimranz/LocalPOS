@@ -184,6 +184,7 @@
     <Content Include="Content\bootstrap.rtl.css" />
     <Content Include="Content\bootstrap.rtl.min.css" />
     <Content Include="CustomerProfile.aspx" />
+    <Content Include="CustomerLedger.ashx" />
     <Content Include="Content\Site.css" />
     <Content Include="DatabaseScripts\CreatePaymentsTable.sql" />
     <Content Include="DatabaseScripts\CreateSkuTable.sql" />
@@ -229,6 +230,7 @@
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
     <Content Include="recipts\.gitkeep" />
+    <Content Include="Templates\Customer_Ledger.xlsx" />
     <Content Include="Templates\Receivables.xlsx" />
     <Content Include="Templates\Sales.xlsx" />
     <Content Include="ReceiptDownload.ashx" />
@@ -250,6 +252,8 @@
     <Compile Include="Models\CustomerOrderSummary.vb" />
     <Compile Include="Models\CheckoutRequest.vb" />
     <Compile Include="Models\CheckoutResult.vb" />
+    <Compile Include="Models\CustomerLedgerEntry.vb" />
+    <Compile Include="Models\CustomerLedgerReport.vb" />
     <Compile Include="Models\Dealer.vb" />
     <Compile Include="Models\HeldSaleDetail.vb" />
     <Compile Include="Models\HeldSaleItem.vb" />
@@ -272,6 +276,7 @@
     <Compile Include="Models\SalesHistoryOrder.vb" />
     <Compile Include="Services\PosService.vb" />
     <Compile Include="Services\AuthManager.vb" />
+    <Compile Include="Services\CustomerLedgerReportGenerator.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
     <Compile Include="Services\ReceivablesReportGenerator.vb" />
     <Compile Include="Services\SalesReportGenerator.vb" />
@@ -302,6 +307,9 @@
     </Compile>
     <Compile Include="CustomerProfile.aspx.designer.vb">
       <DependentUpon>CustomerProfile.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CustomerLedger.ashx.vb">
+      <DependentUpon>CustomerLedger.ashx</DependentUpon>
     </Compile>
     <Compile Include="ManageProducts.aspx.vb">
       <SubType>ASPXCodeBehind</SubType>
