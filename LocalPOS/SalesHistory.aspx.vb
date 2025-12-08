@@ -3,6 +3,7 @@ Imports System.Collections.Generic
 Imports System.Configuration
 Imports System.Globalization
 Imports System.Linq
+Imports System.Web
 Imports System.Web.UI
 Imports System.Web.UI.WebControls
 Imports LocalPOS.LocalPOS.Models
@@ -112,8 +113,11 @@ Public Class SalesHistory
             litOrderCount.Text = "0"
             litGrossTotal.Text = FormatCurrency(0D)
             litOutstandingTotal.Text = FormatCurrency(0D)
+            UpdateSalesExportLink(Nothing)
             Return
         End If
+
+        UpdateSalesExportLink(filter)
 
         Dim orders = _posService.GetSalesHistory(filter)
         If orders Is Nothing Then
@@ -128,6 +132,46 @@ Public Class SalesHistory
         litGrossTotal.Text = FormatCurrency(orders.Sum(Function(o) o.TotalAmount))
         litOutstandingTotal.Text = FormatCurrency(orders.Sum(Function(o) o.OutstandingAmount))
     End Sub
+
+    Private Sub UpdateSalesExportLink(filter As SalesHistoryFilter)
+        If lnkSalesReport Is Nothing Then
+            Return
+        End If
+
+        If filter Is Nothing Then
+            lnkSalesReport.Visible = False
+            lnkSalesReport.NavigateUrl = ResolveClientUrl("~/SalesReport.ashx")
+            Return
+        End If
+
+        lnkSalesReport.Visible = True
+        lnkSalesReport.NavigateUrl = BuildSalesExportUrl(filter)
+    End Sub
+
+    Private Function BuildSalesExportUrl(filter As SalesHistoryFilter) As String
+        Dim baseUrl = ResolveClientUrl("~/SalesReport.ashx")
+        If filter Is Nothing Then
+            Return baseUrl
+        End If
+
+        Dim query = HttpUtility.ParseQueryString(String.Empty)
+        If filter.FromDate.HasValue Then
+            query("from") = filter.FromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        End If
+        If filter.ToDate.HasValue Then
+            query("to") = filter.ToDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+        End If
+        If Not String.IsNullOrWhiteSpace(filter.OrderNumber) Then
+            query("order") = filter.OrderNumber
+        End If
+
+        Dim queryString = query.ToString()
+        If String.IsNullOrWhiteSpace(queryString) Then
+            Return baseUrl
+        End If
+
+        Return $"{baseUrl}?{queryString}"
+    End Function
 
     Protected Sub rptSales_ItemDataBound(sender As Object, e As RepeaterItemEventArgs)
         If e.Item.ItemType <> ListItemType.Item AndAlso e.Item.ItemType <> ListItemType.AlternatingItem Then

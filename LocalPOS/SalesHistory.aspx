@@ -69,7 +69,10 @@
                             <small class="text-muted text-uppercase">Outstanding</small>
                             <div class="h4 mb-0 text-danger"><asp:Literal runat="server" ID="litOutstandingTotal"></asp:Literal></div>
                         </div>
-                        <div class="summary-actions text-end">
+                        <div class="summary-actions text-end d-flex flex-column gap-2 align-items-end">
+                            <asp:HyperLink runat="server" ID="lnkSalesReport" CssClass="btn btn-primary btn-sm btn-sales-history" Target="_blank">
+                                Import Sales to Excel
+                            </asp:HyperLink>
                             <asp:HyperLink runat="server" ID="lnkReceivablesReport" CssClass="btn btn-outline-primary btn-sm btn-sales-history" NavigateUrl="~/ReceivablesReport.ashx" Target="_blank">
                                 Download receivables
                             </asp:HyperLink>

@@ -230,8 +230,10 @@
     <Content Include="Bundle.config" />
     <Content Include="recipts\.gitkeep" />
     <Content Include="Templates\Receivables.xlsx" />
+    <Content Include="Templates\Sales.xlsx" />
     <Content Include="ReceiptDownload.ashx" />
     <Content Include="ReceivablesReport.ashx" />
+    <Content Include="SalesReport.ashx" />
     <Content Include="SalesHistory.aspx" />
     <Content Include="Login.aspx" />
     <Content Include="product media\.gitkeep" />
@@ -272,6 +274,7 @@
     <Compile Include="Services\AuthManager.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
     <Compile Include="Services\ReceivablesReportGenerator.vb" />
+    <Compile Include="Services\SalesReportGenerator.vb" />
     <Compile Include="About.aspx.designer.vb">
       <DependentUpon>About.aspx</DependentUpon>
     </Compile>
@@ -319,6 +322,9 @@
     </Compile>
     <Compile Include="ReceivablesReport.ashx.vb">
       <DependentUpon>ReceivablesReport.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="SalesReport.ashx.vb">
+      <DependentUpon>SalesReport.ashx</DependentUpon>
     </Compile>
     <Compile Include="Login.aspx.vb">
       <SubType>ASPXCodeBehind</SubType>
