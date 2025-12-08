@@ -68,11 +68,12 @@ Public Class _Default
 
     Private ReadOnly Property SelectedDiscountMode As DiscountInputMode
         Get
-            If ddlDiscountMode Is Nothing Then
+            If rblDiscountMode Is Nothing Then
                 Return DiscountInputMode.Percentage
             End If
 
-            If ddlDiscountMode.SelectedValue IsNot Nothing AndAlso ddlDiscountMode.SelectedValue.Equals("Amount", StringComparison.OrdinalIgnoreCase) Then
+            Dim selected = rblDiscountMode.SelectedValue
+            If Not String.IsNullOrWhiteSpace(selected) AndAlso selected.Equals("Amount", StringComparison.OrdinalIgnoreCase) Then
                 Return DiscountInputMode.Amount
             End If
 
@@ -453,7 +454,7 @@ Public Class _Default
         BindCart()
     End Sub
 
-    Protected Sub ddlDiscountMode_SelectedIndexChanged(sender As Object, e As EventArgs)
+    Protected Sub rblDiscountMode_SelectedIndexChanged(sender As Object, e As EventArgs)
         BindCart()
     End Sub
 
@@ -786,8 +787,8 @@ Public Class _Default
             txtDiscount.Text = "0"
         End If
 
-        If ddlDiscountMode IsNot Nothing Then
-            ddlDiscountMode.SelectedValue = "Percentage"
+        If rblDiscountMode IsNot Nothing Then
+            rblDiscountMode.SelectedValue = "Percentage"
         End If
     End Sub
 
@@ -892,8 +893,8 @@ Public Class _Default
         End If
 
         txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
-        If ddlDiscountMode IsNot Nothing Then
-            ddlDiscountMode.SelectedValue = "Percentage"
+        If rblDiscountMode IsNot Nothing Then
+            rblDiscountMode.SelectedValue = "Percentage"
         End If
         ActiveHeldSaleId = detail.HeldSaleId
         SetSelectedCustomer(detail.DealerId)

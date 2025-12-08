@@ -11,8 +11,12 @@
                 <div class="terminal-name">Sales</div>
                 <div class="location-info text-muted">Review every order, payment, and receipt in one place.</div>
             </div>
-            <div class="user-menu-wrapper pos-user-menu" data-user-menu-wrapper>
-                <button type="button" class="user-pill user-menu-toggle pos-user-toggle" data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
+            <div class="dropdown pos-user-menu">
+                <button type="button"
+                    class="user-pill dropdown-toggle"
+                    id="salesUserMenuToggle"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
                     <div class="user-avatar">
                         <asp:Literal runat="server" ID="litCashierInitials"></asp:Literal>
                     </div>
@@ -22,10 +26,10 @@
                     </div>
                     <span class="user-menu-caret" aria-hidden="true"></span>
                 </button>
-                <div class="user-menu-dropdown pos-user-dropdown" data-user-menu-panel>
-                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item pos-user-item" OnClick="btnLogout_Click" CausesValidation="false">
+                <div class="dropdown-menu dropdown-menu-end pos-user-dropdown" aria-labelledby="salesUserMenuToggle">
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="dropdown-item pos-user-item" OnClick="btnLogout_Click" CausesValidation="false">
                         <span class="logout-icon" aria-hidden="true"></span>
-                        <span>Log out</span>
+                        Log out
                     </asp:LinkButton>
                 </div>
             </div>

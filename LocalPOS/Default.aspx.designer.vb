@@ -203,13 +203,13 @@ Partial Public Class _Default
     Protected WithEvents txtDiscount As Global.System.Web.UI.WebControls.TextBox
 
     '''<summary>
-    '''ddlDiscountMode control.
+    '''rblDiscountMode control.
     '''</summary>
     '''<remarks>
     '''Auto-generated field.
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
-    Protected WithEvents ddlDiscountMode As Global.System.Web.UI.WebControls.DropDownList
+    Protected WithEvents rblDiscountMode As Global.System.Web.UI.WebControls.RadioButtonList
 
     '''<summary>
     '''litSubtotal control.

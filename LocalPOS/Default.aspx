@@ -11,8 +11,12 @@
                 <div id="currentDate"><asp:Literal ID="litDate" runat="server"></asp:Literal></div>
                 <div id="currentTime"><asp:Literal ID="litTime" runat="server"></asp:Literal></div>
             </div>
-            <div class="user-menu-wrapper pos-user-menu" data-user-menu-wrapper>
-                <button type="button" class="user-pill user-menu-toggle pos-user-toggle" data-user-menu-toggle aria-haspopup="true" aria-expanded="false">
+            <div class="dropdown pos-user-menu">
+                <button type="button"
+                    class="user-pill dropdown-toggle"
+                    id="posUserMenuToggle"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
                     <div class="user-avatar">
                         <asp:Literal runat="server" ID="litCashierInitials"></asp:Literal>
                     </div>
@@ -22,10 +26,10 @@
                     </div>
                     <span class="user-menu-caret" aria-hidden="true"></span>
                 </button>
-                <div class="user-menu-dropdown pos-user-dropdown" data-user-menu-panel>
-                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item pos-user-item" OnClick="btnLogout_Click" CausesValidation="false">
+                <div class="dropdown-menu dropdown-menu-end pos-user-dropdown" aria-labelledby="posUserMenuToggle">
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="dropdown-item pos-user-item" OnClick="btnLogout_Click" CausesValidation="false">
                         <span class="logout-icon" aria-hidden="true"></span>
-                        <span>Log out</span>
+                        Log out
                     </asp:LinkButton>
                 </div>
             </div>
@@ -172,14 +176,16 @@
                         <div class="discount-control">
                             <div class="discount-header">
                                 <label class="form-label fw-semibold mb-0">Discount</label>
-                                <asp:DropDownList runat="server"
-                                    ID="ddlDiscountMode"
-                                    CssClass="discount-type-select pos-select-chip"
+                                <asp:RadioButtonList runat="server"
+                                    ID="rblDiscountMode"
+                                    CssClass="discount-mode-pill"
+                                    RepeatDirection="Horizontal"
+                                    RepeatLayout="Flow"
                                     AutoPostBack="true"
-                                    OnSelectedIndexChanged="ddlDiscountMode_SelectedIndexChanged">
-                                    <asp:ListItem Text="Percentage" Value="Percentage" Selected="True"></asp:ListItem>
+                                    OnSelectedIndexChanged="rblDiscountMode_SelectedIndexChanged">
+                                    <asp:ListItem Text="Percent" Value="Percentage" Selected="True"></asp:ListItem>
                                     <asp:ListItem Text="Value" Value="Amount"></asp:ListItem>
-                                </asp:DropDownList>
+                                </asp:RadioButtonList>
                             </div>
                             <asp:TextBox runat="server"
                                 ID="txtDiscount"
