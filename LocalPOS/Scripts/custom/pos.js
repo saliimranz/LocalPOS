@@ -391,6 +391,7 @@
         setupCashInput();
         setupNumericKeypad();
         updateAmountDueFromInputs();
+        flushPendingReceiptDownload();
     }
 
     var ajaxHandlersAttached = false;
@@ -407,6 +408,7 @@
             manager.add_endRequest(function () {
                 wirePaymentOptions();
                 cleanupModalArtifacts();
+                flushPendingReceiptDownload();
             });
             ajaxHandlersAttached = true;
         }
@@ -427,6 +429,34 @@
 
     document.addEventListener('shown.bs.modal', cleanupModalArtifacts);
     document.addEventListener('hidden.bs.modal', cleanupModalArtifacts);
+
+    function performReceiptDownload(url) {
+        if (!url) {
+            return;
+        }
+        setTimeout(function () {
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            var separator = url.indexOf('?') === -1 ? '?' : '&';
+            iframe.src = url + separator + '_ts=' + Date.now();
+            document.body.appendChild(iframe);
+            setTimeout(function () {
+                if (iframe.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
+            }, 60000);
+        }, 150);
+    }
+
+    function flushPendingReceiptDownload() {
+        var field = document.getElementById('hfReceiptDownloadUrl');
+        if (!field || !field.value) {
+            return;
+        }
+        var pendingUrl = field.value;
+        field.value = '';
+        performReceiptDownload(pendingUrl);
+    }
 
     window.PosUI = {
         showPaymentModal: function () {
@@ -451,21 +481,7 @@
             toggleModalById('heldBillsModal', 'hide');
         },
         downloadReceipt: function (url) {
-            if (!url) {
-                return;
-            }
-            setTimeout(function () {
-                var iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                var separator = url.indexOf('?') === -1 ? '?' : '&';
-                iframe.src = url + separator + '_ts=' + Date.now();
-                document.body.appendChild(iframe);
-                setTimeout(function () {
-                    if (iframe.parentNode) {
-                        iframe.parentNode.removeChild(iframe);
-                    }
-                }, 60000);
-            }, 150);
+            performReceiptDownload(url);
         }
     };
 
@@ -473,5 +489,6 @@
         keepClockUpdated();
         wirePaymentOptions();
         attachAjaxHandlers();
+        flushPendingReceiptDownload();
     });
 })();

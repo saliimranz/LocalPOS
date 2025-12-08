@@ -727,6 +727,9 @@ Public Class _Default
         litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
         hfBaseAmountDue.Value = "0"
         hfAmountDue.Value = "0"
+        If hfReceiptDownloadUrl IsNot Nothing Then
+            hfReceiptDownloadUrl.Value = String.Empty
+        End If
         Dim defaultTaxPercent = If(String.IsNullOrWhiteSpace(hfDefaultTaxPercent.Value), (TaxRate * 100D).ToString(CultureInfo.InvariantCulture), hfDefaultTaxPercent.Value)
         If txtModalTaxPercent IsNot Nothing Then
             txtModalTaxPercent.Text = defaultTaxPercent
@@ -804,8 +807,12 @@ Public Class _Default
             Return
         End If
 
-        Dim safeUrl = HttpUtility.JavaScriptStringEncode(url)
-        Dim script = $"PosUI.downloadReceipt('{safeUrl}');"
-        ScriptManager.RegisterStartupScript(Me, Me.GetType(), $"ReceiptDownload{orderId}", script, True)
+        QueueReceiptDownload(url)
+    End Sub
+
+    Private Sub QueueReceiptDownload(url As String)
+        If hfReceiptDownloadUrl IsNot Nothing Then
+            hfReceiptDownloadUrl.Value = url
+        End If
     End Sub
 End Class

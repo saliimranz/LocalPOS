@@ -552,4 +552,13 @@ Partial Public Class _Default
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
     Protected WithEvents hfActiveHeldSaleId As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfReceiptDownloadUrl control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfReceiptDownloadUrl As Global.System.Web.UI.WebControls.HiddenField
 End Class

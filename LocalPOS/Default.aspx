@@ -365,6 +365,7 @@
                 <asp:HiddenField runat="server" ID="hfTaxableAmount" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfDefaultTaxPercent" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfActiveHeldSaleId" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfReceiptDownloadUrl" ClientIDMode="Static" />
 
                 <div class="modal fade modal-pos" id="holdConfirmModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
