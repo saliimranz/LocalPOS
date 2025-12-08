@@ -11,8 +11,8 @@
                 <div id="currentDate"><asp:Literal ID="litDate" runat="server"></asp:Literal></div>
                 <div id="currentTime"><asp:Literal ID="litTime" runat="server"></asp:Literal></div>
             </div>
-            <div class="user-menu" data-user-menu>
-                <button type="button" class="user-pill" id="btnUserMenuToggle" data-user-menu-toggle="true" aria-haspopup="true" aria-expanded="false">
+            <div class="user-menu">
+                <button type="button" class="user-pill" id="btnUserMenuToggle" aria-haspopup="true">
                     <div class="user-avatar">AD</div>
                     <div>
                         <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
@@ -20,8 +20,8 @@
                     </div>
                     <span class="user-pill-caret" aria-hidden="true"></span>
                 </button>
-                <div class="user-menu-dropdown" aria-hidden="true" hidden="hidden">
-                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-action" OnClick="btnLogout_Click" CausesValidation="false" UseSubmitBehavior="false">Logout</asp:LinkButton>
+                <div class="user-menu-dropdown" aria-hidden="true">
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-action" OnClick="btnLogout_Click" CausesValidation="false">Logout</asp:LinkButton>
                 </div>
             </div>
         </div>

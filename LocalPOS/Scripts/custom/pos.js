@@ -395,60 +395,6 @@
     }
 
     var ajaxHandlersAttached = false;
-    var userMenuInitialized = false;
-
-    function setupUserMenu() {
-        if (userMenuInitialized) {
-            return;
-        }
-        var menu = document.querySelector('[data-user-menu]');
-        if (!menu) {
-            return;
-        }
-        var toggle = menu.querySelector('[data-user-menu-toggle]');
-        var dropdown = menu.querySelector('.user-menu-dropdown');
-        if (!toggle || !dropdown) {
-            return;
-        }
-        if (!dropdown.hasAttribute('hidden')) {
-            dropdown.hidden = true;
-        }
-
-        function closeMenu() {
-            menu.classList.remove('open');
-            dropdown.setAttribute('aria-hidden', 'true');
-            dropdown.hidden = true;
-            toggle.setAttribute('aria-expanded', 'false');
-        }
-
-        toggle.addEventListener('click', function (event) {
-            event.preventDefault();
-            var isOpen = menu.classList.toggle('open');
-            dropdown.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
-            dropdown.hidden = !isOpen;
-            toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        });
-
-        document.addEventListener('click', function (event) {
-            if (!menu.classList.contains('open')) {
-                return;
-            }
-            if (menu.contains(event.target)) {
-                return;
-            }
-            closeMenu();
-        });
-
-        document.addEventListener('keydown', function (event) {
-            var key = event.key || event.keyCode;
-            if ((key === 'Escape' || key === 'Esc' || key === 27) && menu.classList.contains('open')) {
-                closeMenu();
-                toggle.focus();
-            }
-        });
-
-        userMenuInitialized = true;
-    }
 
     function attachAjaxHandlers() {
         if (ajaxHandlersAttached) {
@@ -463,7 +409,6 @@
                 wirePaymentOptions();
                 cleanupModalArtifacts();
                 flushPendingReceiptDownload();
-                setupUserMenu();
             });
             ajaxHandlersAttached = true;
         }
@@ -545,6 +490,5 @@
         wirePaymentOptions();
         attachAjaxHandlers();
         flushPendingReceiptDownload();
-        setupUserMenu();
     });
 })();

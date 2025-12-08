@@ -116,7 +116,8 @@
     z-index: 20;
 }
 
-.user-menu.open .user-menu-dropdown {
+.user-menu:hover .user-menu-dropdown,
+.user-menu:focus-within .user-menu-dropdown {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
