@@ -22,7 +22,7 @@
                     </div>
                     <span class="user-menu-caret" aria-hidden="true"></span>
                 </button>
-                <div class="user-menu-dropdown" data-user-menu-panel hidden>
+                <div class="user-menu-dropdown" data-user-menu-panel>
                     <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item" OnClick="btnLogout_Click" CausesValidation="false">Log out</asp:LinkButton>
                 </div>
             </div>

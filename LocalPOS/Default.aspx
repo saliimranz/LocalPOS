@@ -22,7 +22,7 @@
                     </div>
                     <span class="user-menu-caret" aria-hidden="true"></span>
                 </button>
-                <div class="user-menu-dropdown" data-user-menu-panel hidden>
+                <div class="user-menu-dropdown" data-user-menu-panel>
                     <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-item" OnClick="btnLogout_Click" CausesValidation="false">Log out</asp:LinkButton>
                 </div>
             </div>
@@ -167,16 +167,8 @@
                         </asp:Panel>
 
                         <div class="discount-control">
-                            <label class="form-label fw-semibold">Discount</label>
-                            <div class="discount-input-group">
-                                <asp:TextBox runat="server"
-                                    ID="txtDiscount"
-                                    CssClass="discount-input"
-                                    TextMode="Number"
-                                    AutoPostBack="true"
-                                    Min="0"
-                                    step="0.01"
-                                    OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
+                            <div class="discount-header">
+                                <label class="form-label fw-semibold mb-0">Discount</label>
                                 <asp:DropDownList runat="server"
                                     ID="ddlDiscountMode"
                                     CssClass="discount-type-select"
@@ -186,6 +178,14 @@
                                     <asp:ListItem Text="Value" Value="Amount"></asp:ListItem>
                                 </asp:DropDownList>
                             </div>
+                            <asp:TextBox runat="server"
+                                ID="txtDiscount"
+                                CssClass="discount-input"
+                                TextMode="Number"
+                                AutoPostBack="true"
+                                Min="0"
+                                step="0.01"
+                                OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
                         </div>
 
                         <div class="summary-card">

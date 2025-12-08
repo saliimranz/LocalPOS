@@ -378,12 +378,8 @@
         }
         wrapper.classList.toggle('is-open', Boolean(isOpen));
         var toggle = wrapper.querySelector('[data-user-menu-toggle]');
-        var panel = wrapper.querySelector('[data-user-menu-panel]');
         if (toggle) {
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        }
-        if (panel) {
-            panel.hidden = !isOpen;
         }
     }
 
@@ -410,7 +406,6 @@
             if (!toggle || !panel) {
                 return;
             }
-            panel.hidden = !wrapper.classList.contains('is-open');
             toggle.addEventListener('click', function (event) {
                 event.preventDefault();
                 event.stopPropagation();
