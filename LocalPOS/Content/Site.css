@@ -1151,34 +1151,3 @@
     white-space: nowrap;
 }
 
-.login-shell {
-    max-width: 640px;
-    margin: 0 auto;
-    border-radius: 32px;
-    box-shadow: 0 24px 60px rgba(15, 8, 46, 0.12);
-    overflow: hidden;
-    background: #fff;
-}
-
-.login-header {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.login-card {
-    padding: 40px;
-}
-
-.login-card .form-control {
-    border-radius: 16px;
-    border: 1px solid #e0d6fc;
-    padding: 14px 16px;
-    font-size: 1rem;
-}
-
-.btn-login {
-    border-radius: 16px;
-    padding: 14px;
-    font-weight: 600;
-    margin-top: 8px;
-}

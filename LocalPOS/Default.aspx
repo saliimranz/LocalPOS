@@ -55,7 +55,7 @@
                                 ID="lnkSalesHistory"
                                 CssClass="btn btn-outline-secondary btn-sales-history"
                                 NavigateUrl="~/SalesHistory.aspx">
-                                Sales history
+                                Sales
                             </asp:HyperLink>
                         </div>
 
