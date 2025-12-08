@@ -1,1 +1,1 @@
-<%@ WebHandler Language="VB" Class="ReceivablesReportHandler" %>
+<%@ WebHandler Language="VB" Class="LocalPOS.ReceivablesReportHandler" %>
