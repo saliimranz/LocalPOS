@@ -1,8 +1,8 @@
 Imports System
 Imports System.IO
 Imports System.Web
-Imports LocalPOS.Models
-Imports LocalPOS.Services
+Imports LocalPOS.LocalPOS.Models
+Imports LocalPOS.LocalPOS.Services
 
 Public Class ReceivablesReportHandler
     Implements IHttpHandler

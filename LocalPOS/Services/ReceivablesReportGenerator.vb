@@ -2,7 +2,7 @@ Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports ClosedXML.Excel
-Imports LocalPOS.Models
+Imports LocalPOS.LocalPOS.Models
 
 Namespace LocalPOS.Services
     Public Class ReceivablesReportGenerator
