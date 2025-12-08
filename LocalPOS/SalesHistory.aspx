@@ -1,4 +1,4 @@
-<%@ Page Title="Sales History" Language="VB" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="SalesHistory.aspx.vb" Inherits="LocalPOS.SalesHistory" %>
+<%@ Page Title="Sales" Language="VB" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="SalesHistory.aspx.vb" Inherits="LocalPOS.SalesHistory" %>
 
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="sales-history-shell">
@@ -8,7 +8,7 @@
                     <span class="back-icon" aria-hidden="true">&larr;</span>
                     Back to POS
                 </asp:HyperLink>
-                <div class="terminal-name">Sales history</div>
+                <div class="terminal-name">Sales</div>
                 <div class="location-info text-muted">Review every order, payment, and receipt in one place.</div>
             </div>
             <div class="user-pill">

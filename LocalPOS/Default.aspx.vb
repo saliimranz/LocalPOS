@@ -705,6 +705,11 @@ Public Class _Default
             ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HidePaymentModal", "PosUI.hidePaymentModal();", True)
             Dim confirmation = $"Order {result.OrderNumber} completed. Receipt {result.ReceiptNumber}."
             ShowCartMessage(confirmation, True)
+            Dim salesPageUrl = ResolveClientUrl("~/SalesHistory.aspx")
+            If Not String.IsNullOrWhiteSpace(salesPageUrl) Then
+                Dim openSalesScript = String.Format(CultureInfo.InvariantCulture, "window.open('{0}', '_blank');", salesPageUrl)
+                ScriptManager.RegisterStartupScript(Me, Me.GetType(), "OpenSalesTab", openSalesScript, True)
+            End If
         Catch ex As Exception
             lblCheckoutError.Text = $"Checkout failed: {ex.Message}"
         End Try
