@@ -458,6 +458,7 @@
                 wirePaymentOptions();
                 cleanupModalArtifacts();
                 flushPendingReceiptDownload();
+                setupUserMenu();
             });
             ajaxHandlersAttached = true;
         }
