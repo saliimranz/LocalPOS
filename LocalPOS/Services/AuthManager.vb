@@ -36,9 +36,9 @@ Namespace LocalPOS.Services
             If flag Is Nothing Then
                 Return False
             End If
-            Dim isAuthenticated As Boolean
-            If Boolean.TryParse(flag.ToString(), isAuthenticated) Then
-                Return isAuthenticated
+            Dim is_Authenticated As Boolean
+            If Boolean.TryParse(flag.ToString(), is_Authenticated) Then
+                Return is_Authenticated
             End If
 
             If TypeOf flag Is Boolean Then

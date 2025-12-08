@@ -4,8 +4,7 @@ Imports System.Web
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
-Namespace LocalPOS
-    Public Class ReceiptDownloadHandler
+Public Class ReceiptDownloadHandler
         Implements IHttpHandler
 
         Private ReadOnly _posService As New PosService()
@@ -111,4 +110,3 @@ Namespace LocalPOS
             End Get
         End Property
     End Class
-End Namespace

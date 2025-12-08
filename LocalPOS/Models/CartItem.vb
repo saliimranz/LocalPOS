@@ -1,4 +1,4 @@
-Imports LocalPOS.Models
+Imports LocalPOS.LocalPOS.Models
 
 Namespace LocalPOS.Models
     ''' <summary>

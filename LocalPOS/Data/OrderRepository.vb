@@ -816,7 +816,6 @@ ORDER BY p.ID DESC"
                         ElseIf result.PaymentMethod.Equals("Card", StringComparison.OrdinalIgnoreCase) Then
                             result.CardRrn = GetNoteString(parsedNotes, "RRN")
                             result.CardAuthCode = GetNoteString(parsedNotes, "Auth")
-                            result.CardStatus = GetNoteString(parsedNotes, "Status")
                         End If
 
                         Return result
