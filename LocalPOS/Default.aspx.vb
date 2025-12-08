@@ -12,6 +12,8 @@ Public Class _Default
     Inherits Page
 
     Private Const CartSessionKey As String = "POS_CART"
+    Private Const DiscountModePercent As String = "Percent"
+    Private Const DiscountModeAmount As String = "Amount"
     Private ReadOnly _posService As New PosService()
 
     Private ReadOnly Property TaxRate As Decimal
@@ -61,6 +63,15 @@ Public Class _Default
         End Set
     End Property
 
+    Private Property DiscountPercentValue As Decimal
+        Get
+            Return If(ViewState("DiscountPercentValue") IsNot Nothing, CType(ViewState("DiscountPercentValue"), Decimal), 0D)
+        End Get
+        Set(value As Decimal)
+            ViewState("DiscountPercentValue") = value
+        End Set
+    End Property
+
     Private Property ActiveHeldSaleId As Integer?
         Get
             If hfActiveHeldSaleId Is Nothing Then
@@ -95,6 +106,9 @@ Public Class _Default
             litDate.Text = DateTime.Now.ToString("MMMM dd, yyyy")
             litTime.Text = DateTime.Now.ToString("HH:mm:ss")
             txtDiscount.Text = "0"
+            If ddlDiscountMode IsNot Nothing Then
+                ddlDiscountMode.SelectedValue = DiscountModePercent
+            End If
 
             BindCustomers()
             BindCategories()
@@ -144,8 +158,8 @@ Public Class _Default
         litCartCount.Text = cart.Count.ToString(CultureInfo.InvariantCulture)
 
         Dim subtotal = cart.Sum(Function(item) item.LineTotal)
-        Dim discountPercent = GetDiscountPercent()
-        Dim discountAmount = subtotal * (discountPercent / 100D)
+        Dim discountPercent As Decimal
+        Dim discountAmount = CalculateDiscountAmount(subtotal, discountPercent)
         Dim taxable = Math.Max(0D, subtotal - discountAmount)
         Dim taxAmount = taxable * TaxRate
         Dim total = taxable + taxAmount
@@ -154,8 +168,16 @@ Public Class _Default
         TaxValue = taxAmount
         TotalValue = total
         DiscountValue = discountAmount
+        DiscountPercentValue = discountPercent
 
-        litSubtotal.Text = subtotal.ToString("C", CultureInfo.CurrentCulture)
+        If litSubtotalBeforeDiscount IsNot Nothing Then
+            litSubtotalBeforeDiscount.Text = subtotal.ToString("C", CultureInfo.CurrentCulture)
+        End If
+        If litDiscountAmount IsNot Nothing Then
+            Dim discountDisplay = If(discountAmount <= 0D, (0D).ToString("C", CultureInfo.CurrentCulture), discountAmount.ToString("C", CultureInfo.CurrentCulture))
+            litDiscountAmount.Text = If(discountAmount <= 0D, discountDisplay, "-" & discountDisplay)
+        End If
+        litSubtotal.Text = taxable.ToString("C", CultureInfo.CurrentCulture)
         litTax.Text = taxAmount.ToString("C", CultureInfo.CurrentCulture)
         litTotal.Text = total.ToString("C", CultureInfo.CurrentCulture)
         hfBaseAmountDue.Value = total.ToString(CultureInfo.InvariantCulture)
@@ -181,14 +203,57 @@ Public Class _Default
     End Sub
 
     Private Function GetDiscountPercent() As Decimal
-        Dim percent As Decimal
-        If Decimal.TryParse(txtDiscount.Text, NumberStyles.Float, CultureInfo.InvariantCulture, percent) Then
-            percent = Math.Min(Math.Max(percent, 0D), 100D)
-        Else
-            percent = 0D
+        Return DiscountPercentValue
+    End Function
+
+    Private Function GetSelectedDiscountMode() As String
+        If ddlDiscountMode Is Nothing OrElse String.IsNullOrWhiteSpace(ddlDiscountMode.SelectedValue) Then
+            Return DiscountModePercent
         End If
-        txtDiscount.Text = percent.ToString(CultureInfo.InvariantCulture)
-        Return percent
+
+        Dim selected = ddlDiscountMode.SelectedValue
+        If selected.Equals(DiscountModeAmount, StringComparison.OrdinalIgnoreCase) Then
+            Return DiscountModeAmount
+        End If
+
+        Return DiscountModePercent
+    End Function
+
+    Private Function GetDiscountInputValue() As Decimal
+        If txtDiscount Is Nothing Then
+            Return 0D
+        End If
+        Dim value As Decimal
+        If Decimal.TryParse(txtDiscount.Text, NumberStyles.Float, CultureInfo.InvariantCulture, value) Then
+            Return Math.Max(0D, value)
+        End If
+        Return 0D
+    End Function
+
+    Private Function CalculateDiscountAmount(subtotal As Decimal, ByRef effectivePercent As Decimal) As Decimal
+        If txtDiscount Is Nothing Then
+            effectivePercent = 0D
+            Return 0D
+        End If
+        Dim inputValue = GetDiscountInputValue()
+        Dim mode = GetSelectedDiscountMode()
+        Dim discountAmount As Decimal
+
+        If mode.Equals(DiscountModeAmount, StringComparison.OrdinalIgnoreCase) Then
+            discountAmount = Math.Min(inputValue, subtotal)
+            If subtotal > 0D AndAlso discountAmount > 0D Then
+                effectivePercent = Decimal.Round((discountAmount / subtotal) * 100D, 4, MidpointRounding.AwayFromZero)
+            Else
+                effectivePercent = 0D
+            End If
+            txtDiscount.Text = discountAmount.ToString(CultureInfo.InvariantCulture)
+        Else
+            effectivePercent = Math.Min(inputValue, 100D)
+            discountAmount = subtotal * (effectivePercent / 100D)
+            txtDiscount.Text = effectivePercent.ToString(CultureInfo.InvariantCulture)
+        End If
+
+        Return discountAmount
     End Function
 
     Private Function GetModalTaxPercent() As Decimal
@@ -399,6 +464,10 @@ Public Class _Default
         BindCart()
     End Sub
 
+    Protected Sub ddlDiscountMode_SelectedIndexChanged(sender As Object, e As EventArgs)
+        BindCart()
+    End Sub
+
     Protected Sub ddlCustomers_SelectedIndexChanged(sender As Object, e As EventArgs)
         UpdatePaymentAvailability()
         UpdateCustomerProfileButtonState()
@@ -539,6 +608,9 @@ Public Class _Default
         cart.Clear()
         ActiveHeldSaleId = Nothing
         txtDiscount.Text = "0"
+        If ddlDiscountMode IsNot Nothing Then
+            ddlDiscountMode.SelectedValue = DiscountModePercent
+        End If
         ResetPaymentFormState()
         BindCart()
         ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HideHoldConfirmModal", "PosUI.hideHoldConfirm();", True)
@@ -547,6 +619,9 @@ Public Class _Default
 
     Protected Sub btnNewSale_Click(sender As Object, e As EventArgs)
         txtDiscount.Text = "0"
+        If ddlDiscountMode IsNot Nothing Then
+            ddlDiscountMode.SelectedValue = DiscountModePercent
+        End If
         ResetPaymentFormState()
         GetCart().Clear()
         ActiveHeldSaleId = Nothing
@@ -557,6 +632,16 @@ Public Class _Default
     Protected Sub btnHeldBills_Click(sender As Object, e As EventArgs)
         BindHeldBillsList()
         ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowHeldBillsModal", "PosUI.showHeldBills();", True)
+    End Sub
+
+    Protected Sub btnLogout_Click(sender As Object, e As EventArgs)
+        AuthManager.SignOut(Context)
+        If Context IsNot Nothing AndAlso Context.Session IsNot Nothing Then
+            Context.Session.Clear()
+            Context.Session.Abandon()
+        End If
+        Response.Redirect("~/Login.aspx", False)
+        Context.ApplicationInstance.CompleteRequest()
     End Sub
 
     Protected Sub btnCheckout_Click(sender As Object, e As EventArgs)
@@ -792,6 +877,9 @@ Public Class _Default
         End If
 
         txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
+        If ddlDiscountMode IsNot Nothing Then
+            ddlDiscountMode.SelectedValue = DiscountModePercent
+        End If
         ActiveHeldSaleId = detail.HeldSaleId
         SetSelectedCustomer(detail.DealerId)
         BindCart()
