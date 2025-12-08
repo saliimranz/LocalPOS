@@ -20,8 +20,8 @@
                     </div>
                     <span class="user-pill-caret" aria-hidden="true"></span>
                 </button>
-                <div class="user-menu-dropdown" aria-hidden="true">
-                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-action" OnClick="btnLogout_Click" CausesValidation="false">Logout</asp:LinkButton>
+                <div class="user-menu-dropdown" aria-hidden="true" hidden="hidden">
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-action" OnClick="btnLogout_Click" CausesValidation="false" UseSubmitBehavior="false">Logout</asp:LinkButton>
                 </div>
             </div>
         </div>
@@ -165,7 +165,7 @@
                         </asp:Panel>
 
                         <div class="cart-discount-control">
-                            <div class="discount-header">
+                            <div class="discount-row">
                                 <label class="form-label fw-semibold mb-0">Discount</label>
                                 <asp:DropDownList runat="server" ID="ddlDiscountMode" CssClass="form-select discount-mode-select" AutoPostBack="true" OnSelectedIndexChanged="ddlDiscountMode_SelectedIndexChanged">
                                     <asp:ListItem Text="Percentage" Value="Percent" Selected="True"></asp:ListItem>

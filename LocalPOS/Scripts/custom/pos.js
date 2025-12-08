@@ -410,10 +410,14 @@
         if (!toggle || !dropdown) {
             return;
         }
+        if (!dropdown.hasAttribute('hidden')) {
+            dropdown.hidden = true;
+        }
 
         function closeMenu() {
             menu.classList.remove('open');
             dropdown.setAttribute('aria-hidden', 'true');
+            dropdown.hidden = true;
             toggle.setAttribute('aria-expanded', 'false');
         }
 
@@ -421,6 +425,7 @@
             event.preventDefault();
             var isOpen = menu.classList.toggle('open');
             dropdown.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+            dropdown.hidden = !isOpen;
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
 
