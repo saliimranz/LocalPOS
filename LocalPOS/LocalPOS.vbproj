@@ -221,6 +221,7 @@
     <Content Include="recipts\.gitkeep" />
     <Content Include="ReceiptDownload.ashx" />
     <Content Include="SalesHistory.aspx" />
+    <Content Include="Login.aspx" />
     <Content Include="product media\.gitkeep" />
   </ItemGroup>
   <ItemGroup>
@@ -254,6 +255,7 @@
     <Compile Include="Models\SalesHistoryFilter.vb" />
     <Compile Include="Models\SalesHistoryOrder.vb" />
     <Compile Include="Services\PosService.vb" />
+    <Compile Include="Services\AuthManager.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
     <Compile Include="About.aspx.designer.vb">
       <DependentUpon>About.aspx</DependentUpon>
@@ -299,6 +301,13 @@
     </Compile>
     <Compile Include="ReceiptDownload.ashx.vb">
       <DependentUpon>ReceiptDownload.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="Login.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Login.aspx.designer.vb">
+      <DependentUpon>Login.aspx</DependentUpon>
     </Compile>
     <Compile Include="SalesHistory.aspx.vb">
       <SubType>ASPXCodeBehind</SubType>
