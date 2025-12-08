@@ -53,6 +53,8 @@
     color: #fff;
     text-align: left;
     transition: background 0.15s ease, transform 0.15s ease;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .pos-header .user-pill:hover {
@@ -76,8 +78,10 @@
     font-weight: 700;
 }
 
-.user-menu {
+.pos-header .user-menu {
     position: relative;
+    display: inline-flex;
+    align-items: center;
 }
 
 .user-pill-caret {
@@ -93,7 +97,7 @@
     transform: rotate(180deg);
 }
 
-.user-menu-dropdown {
+.pos-header .user-menu-dropdown {
     position: absolute;
     right: 0;
     top: calc(100% + 12px);
@@ -105,14 +109,16 @@
     box-shadow: 0 18px 40px rgba(27, 20, 63, 0.18);
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
     transform: translateY(-6px);
     transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 20;
 }
 
-.user-menu.open .user-menu-dropdown {
+.pos-header .user-menu.open .user-menu-dropdown {
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
     transform: translateY(0);
 }
 
@@ -469,18 +475,21 @@
     gap: 8px;
 }
 
-.discount-field-group {
+.discount-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-.discount-field-group .discount-input {
-    flex: 1;
+.discount-header .form-label {
+    margin-bottom: 0;
 }
 
 .discount-mode-select {
     min-width: 140px;
+    width: auto;
+    flex: 0 0 auto;
     border-radius: 14px;
     border: 1px solid #e6dafc;
     background: #fff;
@@ -494,6 +503,17 @@
     border-color: #c8b5ff;
     box-shadow: 0 0 0 2px rgba(108, 43, 255, 0.15);
     outline: none;
+}
+
+@media (max-width: 520px) {
+    .discount-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .discount-mode-select {
+        width: 100%;
+    }
 }
 
 .empty-cart {

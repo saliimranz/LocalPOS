@@ -165,19 +165,27 @@
                         </asp:Panel>
 
                         <div class="cart-discount-control">
-                            <label class="form-label fw-semibold">Discount</label>
-                            <div class="discount-field-group">
-                                <asp:TextBox runat="server" ID="txtDiscount" CssClass="discount-input" TextMode="Number" AutoPostBack="true" min="0" step="0.01" OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
+                            <div class="discount-header">
+                                <label class="form-label fw-semibold mb-0">Discount</label>
                                 <asp:DropDownList runat="server" ID="ddlDiscountMode" CssClass="form-select discount-mode-select" AutoPostBack="true" OnSelectedIndexChanged="ddlDiscountMode_SelectedIndexChanged">
                                     <asp:ListItem Text="Percentage" Value="Percent" Selected="True"></asp:ListItem>
                                     <asp:ListItem Text="Value" Value="Amount"></asp:ListItem>
                                 </asp:DropDownList>
                             </div>
+                            <asp:TextBox runat="server" ID="txtDiscount" CssClass="discount-input" TextMode="Number" AutoPostBack="true" min="0" step="0.01" OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
                         </div>
 
                         <div class="summary-card">
                             <div class="summary-row">
-                                <span>Subtotal</span>
+                                <span>Subtotal (Before Discount)</span>
+                                <strong><asp:Literal runat="server" ID="litSubtotalBeforeDiscount"></asp:Literal></strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Discount</span>
+                                <strong class="text-success"><asp:Literal runat="server" ID="litDiscountAmount"></asp:Literal></strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Subtotal (After Discount)</span>
                                 <strong><asp:Literal runat="server" ID="litSubtotal"></asp:Literal></strong>
                             </div>
                             <div class="summary-row">

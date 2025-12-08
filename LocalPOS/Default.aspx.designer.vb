@@ -203,6 +203,24 @@ Partial Public Class _Default
     Protected WithEvents ddlDiscountMode As Global.System.Web.UI.WebControls.DropDownList
 
     '''<summary>
+    '''litSubtotalBeforeDiscount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litSubtotalBeforeDiscount As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litDiscountAmount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litDiscountAmount As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
     '''litSubtotal control.
     '''</summary>
     '''<remarks>

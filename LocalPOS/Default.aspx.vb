@@ -170,7 +170,14 @@ Public Class _Default
         DiscountValue = discountAmount
         DiscountPercentValue = discountPercent
 
-        litSubtotal.Text = subtotal.ToString("C", CultureInfo.CurrentCulture)
+        If litSubtotalBeforeDiscount IsNot Nothing Then
+            litSubtotalBeforeDiscount.Text = subtotal.ToString("C", CultureInfo.CurrentCulture)
+        End If
+        If litDiscountAmount IsNot Nothing Then
+            Dim discountDisplay = If(discountAmount <= 0D, (0D).ToString("C", CultureInfo.CurrentCulture), discountAmount.ToString("C", CultureInfo.CurrentCulture))
+            litDiscountAmount.Text = If(discountAmount <= 0D, discountDisplay, "-" & discountDisplay)
+        End If
+        litSubtotal.Text = taxable.ToString("C", CultureInfo.CurrentCulture)
         litTax.Text = taxAmount.ToString("C", CultureInfo.CurrentCulture)
         litTotal.Text = total.ToString("C", CultureInfo.CurrentCulture)
         hfBaseAmountDue.Value = total.ToString(CultureInfo.InvariantCulture)
