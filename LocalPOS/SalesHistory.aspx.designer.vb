@@ -9,6 +9,11 @@ Partial Public Class SalesHistory
     Protected WithEvents lnkBackToPos As Global.System.Web.UI.WebControls.HyperLink
 
     '''<summary>
+    '''Control lnkSalesReport.
+    '''</summary>
+    Protected WithEvents lnkSalesReport As Global.System.Web.UI.WebControls.HyperLink
+
+    '''<summary>
     '''Control lnkReceivablesReport.
     '''</summary>
     Protected WithEvents lnkReceivablesReport As Global.System.Web.UI.WebControls.HyperLink
