@@ -12,9 +12,6 @@
                 <div class="location-info text-muted">Review every order, payment, and receipt in one place.</div>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <asp:HyperLink runat="server" ID="lnkReceivablesReport" CssClass="btn btn-outline-primary btn-sm" NavigateUrl="~/ReceivablesReport.ashx" Target="_blank">
-                    Download receivables
-                </asp:HyperLink>
                 <div class="user-pill">
                     <div class="user-avatar">SH</div>
                     <div>
@@ -71,6 +68,11 @@
                         <div>
                             <small class="text-muted text-uppercase">Outstanding</small>
                             <div class="h4 mb-0 text-danger"><asp:Literal runat="server" ID="litOutstandingTotal"></asp:Literal></div>
+                        </div>
+                        <div class="summary-actions text-end">
+                            <asp:HyperLink runat="server" ID="lnkReceivablesReport" CssClass="btn btn-outline-primary btn-sm btn-sales-history" NavigateUrl="~/ReceivablesReport.ashx" Target="_blank">
+                                Download receivables
+                            </asp:HyperLink>
                         </div>
                     </div>
                 </div>

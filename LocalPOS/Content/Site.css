@@ -1245,6 +1245,12 @@
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
+.summary-grid .summary-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+}
+
 .order-card-extended {
     border-radius: 24px;
     border: 1px solid #f1eef7;
