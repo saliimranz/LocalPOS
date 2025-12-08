@@ -51,6 +51,18 @@ Namespace LocalPOS.Services
             Return _orderRepository.GetCustomerOrders(dealerId)
         End Function
 
+        Public Function GetSalesHistory(filter As SalesHistoryFilter) As IList(Of SalesHistoryOrder)
+            Return _orderRepository.GetSalesHistory(filter)
+        End Function
+
+        Public Function GetOrderReceipt(orderId As Integer) As OrderReceiptData
+            Return _orderRepository.GetOrderReceipt(orderId)
+        End Function
+
+        Public Function GetSettlementReceipt(orderId As Integer, receiptNumber As String) As PendingPaymentResult
+            Return _orderRepository.GetSettlementReceipt(orderId, receiptNumber)
+        End Function
+
         Public Function GetOrderPayments(orderId As Integer) As IList(Of OrderPaymentRecord)
             Return _orderRepository.GetOrderPayments(orderId)
         End Function

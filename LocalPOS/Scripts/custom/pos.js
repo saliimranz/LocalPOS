@@ -449,6 +449,21 @@
         },
         hideHeldBills: function () {
             toggleModalById('heldBillsModal', 'hide');
+        },
+        downloadReceipt: function (url) {
+            if (!url) {
+                return;
+            }
+            setTimeout(function () {
+                var anchor = document.createElement('a');
+                anchor.style.display = 'none';
+                anchor.href = url;
+                anchor.target = '_blank';
+                anchor.rel = 'noopener';
+                document.body.appendChild(anchor);
+                anchor.click();
+                document.body.removeChild(anchor);
+            }, 150);
         }
     };
 

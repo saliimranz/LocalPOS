@@ -219,6 +219,8 @@
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
     <Content Include="recipts\.gitkeep" />
+    <Content Include="ReceiptDownload.ashx" />
+    <Content Include="SalesHistory.aspx" />
     <Content Include="product media\.gitkeep" />
   </ItemGroup>
   <ItemGroup>
@@ -246,6 +248,11 @@
     <Compile Include="Models\ProductCreateRequest.vb" />
     <Compile Include="Models\ProductSkuRequest.vb" />
     <Compile Include="Models\ProductUpdateRequest.vb" />
+    <Compile Include="Models\OrderLineItem.vb" />
+    <Compile Include="Models\OrderReceiptData.vb" />
+    <Compile Include="Models\ReceiptDocument.vb" />
+    <Compile Include="Models\SalesHistoryFilter.vb" />
+    <Compile Include="Models\SalesHistoryOrder.vb" />
     <Compile Include="Services\PosService.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
     <Compile Include="About.aspx.designer.vb">
@@ -289,6 +296,16 @@
     </Compile>
     <Compile Include="ProductDetails.aspx.designer.vb">
       <DependentUpon>ProductDetails.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ReceiptDownload.ashx.vb">
+      <DependentUpon>ReceiptDownload.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="SalesHistory.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>SalesHistory.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SalesHistory.aspx.designer.vb">
+      <DependentUpon>SalesHistory.aspx</DependentUpon>
     </Compile>
     <Compile Include="Global.asax.vb">
       <DependentUpon>Global.asax</DependentUpon>

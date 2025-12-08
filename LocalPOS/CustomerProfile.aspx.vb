@@ -3,6 +3,7 @@ Imports System.Collections.Generic
 Imports System.Configuration
 Imports System.Globalization
 Imports System.Linq
+Imports System.Web
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
@@ -257,9 +258,10 @@ Public Partial Class CustomerProfile
 
                 request.PaymentAmount = context.OutstandingAmount
                 Dim result = _posService.CompletePendingPayment(request)
-                Dim receiptPath = SaveSettlementReceipt(result)
-                If Not String.IsNullOrWhiteSpace(receiptPath) Then
-                    result.ReceiptFilePath = receiptPath
+                Dim receiptUrl = BuildSettlementReceiptUrl(result)
+                If Not String.IsNullOrWhiteSpace(receiptUrl) Then
+                    result.ReceiptFilePath = receiptUrl
+                    TriggerSettlementDownload(receiptUrl, result.OrderId)
                 End If
 
                 BindOrders()
@@ -268,10 +270,7 @@ Public Partial Class CustomerProfile
                 ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HidePaymentModal", "PosUI.hidePaymentModal();", True)
 
                 lblPageMessage.CssClass = "d-block mb-3 text-success"
-                Dim confirmation = $"Order {result.OrderNumber} marked complete. Receipt {result.ReceiptNumber}."
-                If Not String.IsNullOrWhiteSpace(result.ReceiptFilePath) Then
-                    confirmation &= " Receipt PDF saved to recipts folder."
-                End If
+                Dim confirmation = $"Order {result.OrderNumber} marked complete. Receipt {result.ReceiptNumber} ready to download."
                 lblPageMessage.Text = confirmation
             Catch ex As Exception
                 lblCheckoutError.Text = $"Unable to complete payment: {ex.Message}"
@@ -294,12 +293,22 @@ Public Partial Class CustomerProfile
             litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
         End Sub
 
-    Private Function SaveSettlementReceipt(result As PendingPaymentResult) As String
-        Try
-            Dim generator = New ReceiptGenerator(Server.MapPath("~"))
-            Return generator.GenerateSettlementReceipt(result)
-        Catch
+    Private Function BuildSettlementReceiptUrl(result As PendingPaymentResult) As String
+        If result Is Nothing OrElse result.OrderId <= 0 OrElse String.IsNullOrWhiteSpace(result.ReceiptNumber) Then
             Return String.Empty
-        End Try
+        End If
+
+        Dim encodedReference = HttpUtility.UrlEncode(result.ReceiptNumber)
+        Return ResolveClientUrl($"~/ReceiptDownload.ashx?mode=settlement&orderId={result.OrderId}&receipt={encodedReference}")
     End Function
+
+    Private Sub TriggerSettlementDownload(url As String, orderId As Integer)
+        If String.IsNullOrWhiteSpace(url) Then
+            Return
+        End If
+
+        Dim safeUrl = HttpUtility.JavaScriptStringEncode(url)
+        Dim script = $"PosUI.downloadReceipt('{safeUrl}');"
+        ScriptManager.RegisterStartupScript(Me, Me.GetType(), $"SettlementReceipt{orderId}", script, True)
+    End Sub
 End Class

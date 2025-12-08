@@ -51,6 +51,12 @@
                                 Text="Held bills"
                                 OnClick="btnHeldBills_Click"
                                 CausesValidation="false" />
+                            <asp:HyperLink runat="server"
+                                ID="lnkSalesHistory"
+                                CssClass="btn btn-outline-secondary btn-sales-history"
+                                NavigateUrl="~/SalesHistory.aspx">
+                                Sales history
+                            </asp:HyperLink>
                         </div>
 
                         <div class="category-pills">

@@ -3,6 +3,7 @@ Imports System.Globalization
 Imports System.Collections.Generic
 Imports System.Linq
 Imports System.Web.UI.WebControls
+Imports System.Web
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
@@ -692,9 +693,10 @@ Public Class _Default
                 _posService.DeleteHeldSale(ActiveHeldSaleId.Value)
                 ActiveHeldSaleId = Nothing
             End If
-            Dim receiptPath = SaveReceiptPdf(request, result)
-            If Not String.IsNullOrWhiteSpace(receiptPath) Then
-                result.ReceiptFilePath = receiptPath
+            Dim receiptUrl = BuildReceiptUrl(result.OrderId)
+            If Not String.IsNullOrWhiteSpace(receiptUrl) Then
+                result.ReceiptFilePath = receiptUrl
+                TriggerReceiptDownload(result.OrderId)
             End If
 
             GetCart().Clear()
@@ -702,24 +704,11 @@ Public Class _Default
             BindCart()
             ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HidePaymentModal", "PosUI.hidePaymentModal();", True)
             Dim confirmation = $"Order {result.OrderNumber} completed. Receipt {result.ReceiptNumber}."
-            If Not String.IsNullOrWhiteSpace(receiptPath) Then
-                confirmation &= " Receipt PDF saved to recipts folder."
-            End If
             ShowCartMessage(confirmation, True)
         Catch ex As Exception
             lblCheckoutError.Text = $"Checkout failed: {ex.Message}"
         End Try
     End Sub
-
-    Private Function SaveReceiptPdf(request As CheckoutRequest, result As CheckoutResult) As String
-        Try
-            Dim generator = New ReceiptGenerator(Server.MapPath("~"))
-            Return generator.Generate(request, result)
-        Catch
-            ' Receipt generation issues should not block checkout completion.
-            Return String.Empty
-        End Try
-    End Function
 
     Private Sub ResetPaymentFormState()
         txtCashReceived.Text = String.Empty
@@ -800,5 +789,23 @@ Public Class _Default
         BindCart()
         ShowCartMessage($"Held bill {detail.ReferenceCode} restored into the cart.", True)
         ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HideHeldBillsModal", "PosUI.hideHeldBills();", True)
+    End Sub
+
+    Private Function BuildReceiptUrl(orderId As Integer) As String
+        If orderId <= 0 Then
+            Return String.Empty
+        End If
+        Return ResolveClientUrl($"~/ReceiptDownload.ashx?mode=sale&orderId={orderId}")
+    End Function
+
+    Private Sub TriggerReceiptDownload(orderId As Integer)
+        Dim url = BuildReceiptUrl(orderId)
+        If String.IsNullOrWhiteSpace(url) Then
+            Return
+        End If
+
+        Dim safeUrl = HttpUtility.JavaScriptStringEncode(url)
+        Dim script = $"PosUI.downloadReceipt('{safeUrl}');"
+        ScriptManager.RegisterStartupScript(Me, Me.GetType(), $"ReceiptDownload{orderId}", script, True)
     End Sub
 End Class
