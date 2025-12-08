@@ -11,11 +11,16 @@
                 <div class="terminal-name">Sales</div>
                 <div class="location-info text-muted">Review every order, payment, and receipt in one place.</div>
             </div>
-            <div class="user-pill">
-                <div class="user-avatar">SH</div>
-                <div>
-                    <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
-                    <small>Cashier</small>
+            <div class="d-flex align-items-center gap-3">
+                <asp:HyperLink runat="server" ID="lnkReceivablesReport" CssClass="btn btn-outline-primary btn-sm" NavigateUrl="~/ReceivablesReport.ashx" Target="_blank">
+                    Download receivables
+                </asp:HyperLink>
+                <div class="user-pill">
+                    <div class="user-avatar">SH</div>
+                    <div>
+                        <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
+                        <small>Cashier</small>
+                    </div>
                 </div>
             </div>
         </div>
