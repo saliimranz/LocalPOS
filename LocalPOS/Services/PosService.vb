@@ -55,6 +55,10 @@ Namespace LocalPOS.Services
             Return _orderRepository.GetSalesHistory(filter)
         End Function
 
+        Public Function GetReceivables() As IList(Of ReceivableReportRow)
+            Return _orderRepository.GetReceivables()
+        End Function
+
         Public Function GetOrderReceipt(orderId As Integer) As OrderReceiptData
             Return _orderRepository.GetOrderReceipt(orderId)
         End Function

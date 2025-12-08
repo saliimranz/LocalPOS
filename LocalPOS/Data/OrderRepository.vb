@@ -320,6 +320,60 @@ ORDER BY o.CDATED DESC"
             Return orders
         End Function
 
+        Public Function GetReceivables() As IList(Of ReceivableReportRow)
+            Dim receivables As New List(Of ReceivableReportRow)()
+            Using connection = CreateConnection()
+                Using command = connection.CreateCommand()
+                    command.CommandText =
+"SELECT 
+    o.ID,
+    o.SPPSOID,
+    ISNULL(o.CDATED, GETDATE()) AS CDATED,
+    ISNULL(o.TP, 0) AS TOTAL_AMOUNT,
+    ISNULL(o.DID, 0) AS DEALER_ID,
+    ISNULL(o.CONTACT, '') AS CONTACT,
+    ISNULL(totals.TotalPaid, 0) AS TOTAL_PAID,
+    ISNULL(lastPayment.OUTSTANDING, ISNULL(o.TP, 0) - ISNULL(totals.TotalPaid, 0)) AS OUTSTANDING
+FROM dbo.TBL_SP_PSO_ORDER o
+OUTER APPLY (
+    SELECT SUM(p.PAID_AMOUNT) AS TotalPaid
+    FROM dbo.TBL_SP_PSO_PAYMENT_2 p
+    WHERE p.ORDER_ID = o.ID
+) totals
+OUTER APPLY (
+    SELECT TOP 1 
+        p.OUTSTANDING
+    FROM dbo.TBL_SP_PSO_PAYMENT_2 p
+    WHERE p.ORDER_ID = o.ID
+    ORDER BY p.CREATED_ON DESC, p.ID DESC
+) lastPayment
+WHERE o.ORD_STATUS = 'Pending Payment'
+ORDER BY o.CDATED ASC, o.ID ASC"
+                    Using reader = command.ExecuteReader()
+                        While reader.Read()
+                            Dim dealerId = reader.GetInt32(reader.GetOrdinal("DEALER_ID"))
+                            Dim contact = reader.GetString(reader.GetOrdinal("CONTACT"))
+                            Dim outstanding = reader.GetDecimal(reader.GetOrdinal("OUTSTANDING"))
+                            If outstanding < 0D Then
+                                outstanding = 0D
+                            End If
+
+                            receivables.Add(New ReceivableReportRow() With {
+                                .OrderId = reader.GetInt32(reader.GetOrdinal("ID")),
+                                .InvoiceNumber = reader.GetString(reader.GetOrdinal("SPPSOID")),
+                                .InvoiceDate = reader.GetDateTime(reader.GetOrdinal("CDATED")),
+                                .TotalAmount = reader.GetDecimal(reader.GetOrdinal("TOTAL_AMOUNT")),
+                                .PaidAmount = reader.GetDecimal(reader.GetOrdinal("TOTAL_PAID")),
+                                .OutstandingAmount = outstanding,
+                                .CustomerName = NormalizeCustomerName(dealerId, contact)
+                            })
+                        End While
+                    End Using
+                End Using
+            End Using
+            Return receivables
+        End Function
+
         Public Function GetOrderById(orderId As Integer) As CustomerOrderSummary
             Using connection = CreateConnection()
                 Return GetOrderById(connection, Nothing, orderId)
