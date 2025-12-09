@@ -54,6 +54,14 @@
                     <span>Outstanding</span>
                     <strong><asp:Literal runat="server" ID="litOutstandingTotal"></asp:Literal></strong>
                 </div>
+                <div class="mt-3 text-end">
+                    <asp:HyperLink runat="server"
+                        ID="lnkDownloadLedger"
+                        CssClass="btn btn-outline-primary btn-sm"
+                        Text="Download Ledger"
+                        Target="_blank"
+                        Visible="false"></asp:HyperLink>
+                </div>
             </div>
         </div>
 

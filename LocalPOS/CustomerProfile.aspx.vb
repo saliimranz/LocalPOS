@@ -47,6 +47,14 @@ Public Partial Class CustomerProfile
         litCustomerPhone.Text = If(String.IsNullOrWhiteSpace(dealer.CellNumber), "-", dealer.CellNumber)
         litCustomerCity.Text = If(String.IsNullOrWhiteSpace(dealer.City), "-", dealer.City)
 
+        If dealer.Id > 0 Then
+            Dim ledgerUrl = $"~/CustomerLedger.ashx?customerId={dealer.Id}"
+            lnkDownloadLedger.NavigateUrl = ResolveClientUrl(ledgerUrl)
+            lnkDownloadLedger.Visible = True
+        Else
+            lnkDownloadLedger.Visible = False
+        End If
+
         BindOrders()
     End Sub
 

@@ -25,6 +25,8 @@ Partial Public Class CustomerProfile
 
     Protected WithEvents litOutstandingTotal As Global.System.Web.UI.WebControls.Literal
 
+    Protected WithEvents lnkDownloadLedger As Global.System.Web.UI.WebControls.HyperLink
+
     Protected WithEvents upOrders As Global.System.Web.UI.UpdatePanel
 
     Protected WithEvents rptOrders As Global.System.Web.UI.WebControls.Repeater
