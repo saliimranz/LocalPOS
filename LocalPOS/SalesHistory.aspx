@@ -112,9 +112,14 @@
                                     <strong class='<%# If(Convert.ToDecimal(Eval("OutstandingAmount")) > 0D, "text-danger", "text-muted") %>'><%# FormatCurrency(Eval("OutstandingAmount")) %></strong>
                                 </div>
                                 <div class="order-card-actions text-end">
-                                    <asp:HyperLink runat="server" ID="lnkReceipt" CssClass="btn btn-outline-primary btn-sm" Target="_blank" NavigateUrl='<%# GetReceiptUrl(Eval("OrderId")) %>'>
-                                        Download receipt
-                                    </asp:HyperLink>
+                                    <div class="d-flex flex-column gap-2 align-items-end">
+                                        <asp:HyperLink runat="server" ID="lnkReceipt" CssClass="btn btn-outline-primary btn-sm" Target="_blank" NavigateUrl='<%# GetReceiptUrl(Eval("OrderId")) %>'>
+                                            Download receipt
+                                        </asp:HyperLink>
+                                        <asp:HyperLink runat="server" ID="lnkInvoice" CssClass="btn btn-outline-secondary btn-sm" Target="_blank" NavigateUrl='<%# GetInvoiceUrl(Eval("OrderId")) %>'>
+                                            Print Invoice
+                                        </asp:HyperLink>
+                                    </div>
                                 </div>
                             </div>
                             <div class="order-line-items">
