@@ -990,6 +990,29 @@
     gap: 12px;
 }
 
+.customer-toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 12px;
+}
+
+.customer-toggle-row .form-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 600;
+    color: #5b4bc4;
+}
+
+.customer-doc-note {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #7a6aa9;
+}
+
 .product-details-grid {
     display: grid;
     grid-template-columns: 320px 1fr;
@@ -1023,6 +1046,14 @@
     background: linear-gradient(90deg, #aa00ff, #6c2bff);
 }
 
+.profile-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
 .btn-back-to-pos {
     border-radius: 999px;
     display: inline-flex;
@@ -1035,6 +1066,17 @@
 .back-icon {
     font-size: 16px;
     line-height: 1;
+}
+
+.btn-edit-customer {
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-weight: 600;
+}
+
+.btn-add-customer {
+    border-radius: 16px;
+    font-weight: 600;
 }
 
 .customer-outstanding-label {

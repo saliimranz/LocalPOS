@@ -95,6 +95,15 @@ Partial Public Class _Default
     Protected WithEvents lnkManageProducts As Global.System.Web.UI.WebControls.HyperLink
 
     '''<summary>
+    '''lnkAddCustomer control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents lnkAddCustomer As Global.System.Web.UI.WebControls.HyperLink
+
+    '''<summary>
     '''btnAllCategories control.
     '''</summary>
     '''<remarks>

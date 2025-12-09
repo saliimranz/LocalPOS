@@ -10,6 +10,7 @@ Imports LocalPOS.LocalPOS.Services
 Public Partial Class CustomerProfile
     Inherits Page
 
+    Private Const CustomerMessageSessionKey As String = "CustomerSuccessMessage"
     Private ReadOnly _posService As New PosService()
 
     Private ReadOnly Property CustomerId As Integer
@@ -29,6 +30,7 @@ Public Partial Class CustomerProfile
             lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
             hfIsCorporateCustomer.Value = "false"
             LoadCustomer()
+            ShowQueuedMessage()
         End If
     End Sub
 
@@ -38,6 +40,7 @@ Public Partial Class CustomerProfile
             lblPageMessage.CssClass = "d-block mb-3 text-danger"
             lblPageMessage.Text = "Customer not found."
             upOrders.Visible = False
+            lnkEditCustomer.Visible = False
             Return
         End If
 
@@ -51,11 +54,30 @@ Public Partial Class CustomerProfile
             Dim ledgerUrl = $"~/CustomerLedger.ashx?customerId={dealer.Id}"
             lnkDownloadLedger.NavigateUrl = ResolveClientUrl(ledgerUrl)
             lnkDownloadLedger.Visible = True
+            Dim currentProfileUrl = $"~/CustomerProfile.aspx?customerId={dealer.Id}"
+            Dim encodedReturn = HttpUtility.UrlEncode(currentProfileUrl)
+            lnkEditCustomer.NavigateUrl = ResolveClientUrl($"~/AddCustomer.aspx?id={dealer.Id}&returnUrl={encodedReturn}")
+            lnkEditCustomer.Visible = True
         Else
             lnkDownloadLedger.Visible = False
+            lnkEditCustomer.Visible = False
         End If
 
         BindOrders()
+    End Sub
+
+    Private Sub ShowQueuedMessage()
+        Dim pending = TryCast(Session(CustomerMessageSessionKey), String)
+        If String.IsNullOrWhiteSpace(pending) Then
+            Return
+        End If
+
+        If String.IsNullOrWhiteSpace(lblPageMessage.Text) Then
+            lblPageMessage.CssClass = "d-block mb-3 text-success"
+            lblPageMessage.Text = pending
+        End If
+
+        Session(CustomerMessageSessionKey) = Nothing
     End Sub
 
         Private Sub BindOrders()

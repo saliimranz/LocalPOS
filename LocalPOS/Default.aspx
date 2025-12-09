@@ -51,6 +51,12 @@
                                 <span class="add-product-icon" aria-hidden="true">+</span>
                                 Add product
                             </asp:HyperLink>
+                            <asp:HyperLink runat="server"
+                                ID="lnkAddCustomer"
+                                CssClass="btn btn-outline-secondary btn-add-customer"
+                                NavigateUrl="~/AddCustomer.aspx?returnUrl=~/Default.aspx">
+                                Add customer
+                            </asp:HyperLink>
                             <asp:Button runat="server"
                                 ID="btnHeldBills"
                                 CssClass="btn btn-purple btn-held-bills"
