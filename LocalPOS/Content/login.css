@@ -74,8 +74,19 @@
 .login-card-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 16px;
     margin-bottom: 28px;
+}
+
+.brand-logo {
+    height: 48px;
+    max-height: 56px;
+    width: auto;
+    max-width: 160px;
+    display: block;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .brand-circle {
