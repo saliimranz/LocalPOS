@@ -2,13 +2,25 @@
 
 <asp:Content ID="BodyContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="product-admin-shell">
-        <div class="product-admin-header">
-            <div>
+        <div class="page-hero product-hero">
+            <div class="hero-content">
+                <p class="hero-label">Catalog workspace</p>
                 <h1>Product catalog</h1>
-                <p class="text-muted mb-0">Create spare parts, upload media, and keep SKU data aligned.</p>
+                <p class="hero-subtitle">Create spare parts, upload media, and keep SKU data aligned with what appears on the POS.</p>
+                <div class="hero-actions">
+                    <asp:HyperLink runat="server" ID="lnkBackToPos" NavigateUrl="~/Default.aspx" CssClass="btn btn-light btn-back-link">Back to POS</asp:HyperLink>
+                    <a href="mailto:support@localpos.app" class="btn btn-outline-light btn-back-link">Need help?</a>
+                </div>
             </div>
-            <div class="product-admin-actions">
-                <asp:HyperLink runat="server" ID="lnkBackToPos" NavigateUrl="~/Default.aspx" CssClass="btn btn-outline-secondary">Back to POS</asp:HyperLink>
+            <div class="hero-stats">
+                <div class="hero-stat-card">
+                    <span class="hero-stat-label">Today's session</span>
+                    <strong class="hero-stat-value"><asp:Literal runat="server" ID="litCatalogUpdated"></asp:Literal></strong>
+                </div>
+                <div class="hero-stat-card">
+                    <span class="hero-stat-label">SKU drafts</span>
+                    <strong class="hero-stat-value"><asp:Literal runat="server" ID="litSkuDraftCount"></asp:Literal></strong>
+                </div>
             </div>
         </div>
 

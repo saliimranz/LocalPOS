@@ -31,6 +31,14 @@ Namespace LocalPOS.Services
             Return _dealerRepository.GetDealer(dealerId)
         End Function
 
+        Public Function CreateDealer(request As DealerUpsertRequest) As Integer
+            Return _dealerRepository.CreateDealer(request)
+        End Function
+
+        Public Sub UpdateDealer(request As DealerUpsertRequest)
+            _dealerRepository.UpdateDealer(request)
+        End Sub
+
         Public Function GetProduct(productId As Integer) As Product
             Return _productRepository.GetProduct(productId)
         End Function

@@ -46,6 +46,7 @@ Public Class ManageProducts
         If Not IsPostBack Then
             BindSkuRepeater()
         End If
+        UpdateHeroSnapshot()
     End Sub
 
     Private Sub BindSkuRepeater()
@@ -65,6 +66,7 @@ Public Class ManageProducts
         drafts.Add(New SkuDraft())
         SkuDrafts = drafts
         BindSkuRepeater()
+        UpdateHeroSnapshot()
     End Sub
 
     Protected Sub btnSaveProduct_Click(sender As Object, e As EventArgs) Handles btnSaveProduct.Click
@@ -103,6 +105,7 @@ Public Class ManageProducts
         Catch ex As Exception
             ShowErrors(New List(Of String) From {$"Unable to save product: {ex.Message}"})
         End Try
+        UpdateHeroSnapshot()
     End Sub
 
     Private Function CaptureSkuDrafts() As IList(Of String)
@@ -337,6 +340,16 @@ Public Class ManageProducts
         SkuDrafts = New List(Of SkuDraft)() From {New SkuDraft()}
         BindSkuRepeater()
         HideErrors()
+        UpdateHeroSnapshot()
+    End Sub
+
+    Private Sub UpdateHeroSnapshot()
+        If litCatalogUpdated IsNot Nothing Then
+            litCatalogUpdated.Text = DateTime.Now.ToString("MMM dd, yyyy")
+        End If
+        If litSkuDraftCount IsNot Nothing Then
+            litSkuDraftCount.Text = SkuDrafts.Count.ToString(CultureInfo.InvariantCulture)
+        End If
     End Sub
 
     Private Sub ShowStatus(message As String, success As Boolean)

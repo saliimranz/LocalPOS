@@ -23,6 +23,24 @@ Partial Public Class ManageProducts
     Protected WithEvents lnkBackToPos As Global.System.Web.UI.WebControls.HyperLink
 
     '''<summary>
+    '''litCatalogUpdated control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litCatalogUpdated As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litSkuDraftCount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litSkuDraftCount As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
     '''pnlStatus control.
     '''</summary>
     '''<remarks>

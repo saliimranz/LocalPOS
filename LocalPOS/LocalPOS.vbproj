@@ -183,6 +183,7 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\bootstrap.rtl.css" />
     <Content Include="Content\bootstrap.rtl.min.css" />
+    <Content Include="AddCustomer.aspx" />
     <Content Include="CustomerProfile.aspx" />
     <Content Include="CustomerLedger.ashx" />
     <Content Include="Content\Site.css" />
@@ -257,6 +258,7 @@
     <Compile Include="Models\CustomerLedgerEntry.vb" />
     <Compile Include="Models\CustomerLedgerReport.vb" />
     <Compile Include="Models\Dealer.vb" />
+    <Compile Include="Models\DealerUpsertRequest.vb" />
     <Compile Include="Models\HeldSaleDetail.vb" />
     <Compile Include="Models\HeldSaleItem.vb" />
     <Compile Include="Models\HeldSaleSummary.vb" />
@@ -296,6 +298,13 @@
     <Compile Include="Contact.aspx.vb">
       <DependentUpon>Contact.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="AddCustomer.aspx.vb">
+      <SubType>ASPXCodeBehind</SubType>
+      <DependentUpon>AddCustomer.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AddCustomer.aspx.designer.vb">
+      <DependentUpon>AddCustomer.aspx</DependentUpon>
     </Compile>
     <Compile Include="CustomerProfile.aspx.vb">
       <SubType>ASPXCodeBehind</SubType>

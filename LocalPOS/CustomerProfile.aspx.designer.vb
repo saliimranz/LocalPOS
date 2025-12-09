@@ -5,6 +5,15 @@ Partial Public Class CustomerProfile
 
     Protected WithEvents lnkBackToPos As Global.System.Web.UI.WebControls.HyperLink
 
+    '''<summary>
+    '''lnkEditCustomer control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents lnkEditCustomer As Global.System.Web.UI.WebControls.HyperLink
+
     Protected WithEvents litCustomerName As Global.System.Web.UI.WebControls.Literal
 
     Protected WithEvents litCustomerCode As Global.System.Web.UI.WebControls.Literal
