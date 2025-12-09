@@ -12,11 +12,7 @@
             </div>
             <div class="login-card">
                 <div class="login-card-header">
-                    <div class="brand-circle">LP</div>
-                    <div>
-                        <div class="terminal-name">LocalPOS Console</div>
-                        <div class="location-info">Secure cashier access</div>
-                    </div>
+                    <img src="Logo/logo.png" alt="OctwayOPS logo" class="brand-logo" />
                 </div>
 
                 <h2 class="login-title">Sign in</h2>
