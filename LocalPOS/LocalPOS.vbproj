@@ -190,6 +190,7 @@
     <Content Include="DatabaseScripts\CreatePaymentsTable.sql" />
     <Content Include="DatabaseScripts\CreateSkuTable.sql" />
     <Content Include="Default.aspx" />
+    <Content Include="Logo\logo.png" />
     <Content Include="ManageProducts.aspx" />
     <Content Include="ProductDetails.aspx" />
     <Content Include="favicon.ico" />
