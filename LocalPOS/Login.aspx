@@ -5,8 +5,8 @@
         <div class="login-shell">
             <div class="login-visual">
                 <div class="login-visual-content">
-                    <span class="visual-chip">Retail POS Suite</span>
-                    <h1>Alanin LML</h1>
+                    <span class="visual-chip">OCTWAY POS Suite</span>
+                    <h1>Al Ain LML</h1>
                     <p class="visual-copy">Lightweight cashier workflows with instant sync, beautiful receipts, and zero guesswork.</p>
                 </div>
             </div>
