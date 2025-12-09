@@ -101,7 +101,7 @@ Public Class _Default
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
         litTaxRate.Text = String.Format(CultureInfo.CurrentCulture, "{0:P0}", TaxRate)
         hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
-        Dim requestedCustomerId = ConsumeNewCustomerId()
+        Dim requestedCustomerId = ConsumeNewCustomerId(Not IsPostBack)
         Dim shouldRefreshCustomers = requestedCustomerId > 0
 
         If Not IsPostBack Then
@@ -563,12 +563,14 @@ Public Class _Default
         UpdateCustomerProfileButtonState()
     End Sub
 
-    Private Function ConsumeNewCustomerId() As Integer
+    Private Function ConsumeNewCustomerId(allowQueryParameter As Boolean) As Integer
         Dim requestedId As Integer
-        Dim rawQuery = Request.QueryString("customerId")
-        If Integer.TryParse(rawQuery, NumberStyles.Integer, CultureInfo.InvariantCulture, requestedId) AndAlso requestedId >= 0 Then
-            Session(PosCustomersRefreshKey) = Nothing
-            Return requestedId
+        If allowQueryParameter Then
+            Dim rawQuery = Request.QueryString("customerId")
+            If Integer.TryParse(rawQuery, NumberStyles.Integer, CultureInfo.InvariantCulture, requestedId) AndAlso requestedId >= 0 Then
+                Session(PosCustomersRefreshKey) = Nothing
+                Return requestedId
+            End If
         End If
 
         Dim sessionValue = Session(PosCustomersRefreshKey)
