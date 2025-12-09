@@ -214,6 +214,15 @@ Public Class SalesHistory
         Return ResolveClientUrl($"~/ReceiptDownload.ashx?mode=sale&orderId={orderId}")
     End Function
 
+    Public Function GetInvoiceUrl(orderIdObj As Object) As String
+        Dim orderId As Integer
+        If orderIdObj Is Nothing OrElse Not Integer.TryParse(orderIdObj.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, orderId) OrElse orderId <= 0 Then
+            Return "#"
+        End If
+
+        Return ResolveClientUrl($"~/OrderInvoice.ashx?orderId={orderId}")
+    End Function
+
     Private Sub SetDateInputs(fromDate As DateTime?, toDate As DateTime?)
         txtFromDate.Text = If(fromDate.HasValue, fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), String.Empty)
         txtToDate.Text = If(toDate.HasValue, toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), String.Empty)

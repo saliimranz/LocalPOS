@@ -922,6 +922,7 @@ WHERE ID = @OrderId"
                 Dim receipt As New OrderReceiptData() With {
                     .OrderId = header.OrderId,
                     .OrderNumber = header.OrderNumber,
+                    .DealerId = header.DealerId,
                     .OrderDate = header.CreatedOn,
                     .CustomerName = header.CustomerName,
                     .PaymentMethod = paymentMethod,
@@ -1110,6 +1111,7 @@ WHERE o.ID = @OrderId"
                     Return New OrderHeaderInfo() With {
                         .OrderId = reader.GetInt32(reader.GetOrdinal("ID")),
                         .OrderNumber = reader.GetString(reader.GetOrdinal("SPPSOID")),
+                        .DealerId = reader.GetInt32(reader.GetOrdinal("DEALER_ID")),
                         .CustomerName = NormalizeCustomerName(reader.GetInt32(reader.GetOrdinal("DEALER_ID")), reader.GetString(reader.GetOrdinal("CONTACT"))),
                         .CashierName = reader.GetString(reader.GetOrdinal("CASHIER")),
                         .CreatedOn = reader.GetDateTime(reader.GetOrdinal("CDATED")),
@@ -1275,6 +1277,7 @@ ORDER BY CREATED_ON DESC, ID DESC"
         Private Class OrderHeaderInfo
             Public Property OrderId As Integer
             Public Property OrderNumber As String
+            Public Property DealerId As Integer
             Public Property CustomerName As String
             Public Property CashierName As String
             Public Property CreatedOn As DateTime

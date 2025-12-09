@@ -8,6 +8,7 @@ Namespace LocalPOS.Models
     Public Class OrderReceiptData
         Public Property OrderId As Integer
         Public Property OrderNumber As String
+        Public Property DealerId As Integer
         Public Property ReceiptNumber As String
         Public Property OrderDate As DateTime
         Public Property CustomerName As String
