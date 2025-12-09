@@ -362,7 +362,7 @@ Namespace LocalPOS.Data
         End Sub
 
         Private Shared Sub AddFlag(command As SqlCommand, name As String, flag As Boolean)
-            command.Parameters.AddWithValue(name, Flag(flag))
+            command.Parameters.AddWithValue(name, ToFlagValue(flag))
         End Sub
 
         Private Shared Function CreateWalkInDealer() As Dealer
@@ -409,7 +409,7 @@ Namespace LocalPOS.Data
             Return value.Trim()
         End Function
 
-        Private Shared Function Flag(value As Boolean) As Integer
+        Private Shared Function ToFlagValue(value As Boolean) As Integer
             Return If(value, 1, 0)
         End Function
 
