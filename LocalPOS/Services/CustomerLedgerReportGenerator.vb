@@ -93,7 +93,8 @@ Public Class CustomerLedgerReportGenerator
 
             Dim amount = Decimal.Round(entry.AmountDue, 2, MidpointRounding.AwayFromZero)
             Dim payment = Decimal.Round(entry.PaymentReceived, 2, MidpointRounding.AwayFromZero)
-            Dim balance = Decimal.Round(entry.BalanceAfterEntry, 2, MidpointRounding.AwayFromZero)
+            Dim balanceRaw = Decimal.Round(entry.BalanceAfterEntry, 2, MidpointRounding.AwayFromZero)
+            Dim balanceDisplay = Decimal.Round(Math.Abs(balanceRaw), 2, MidpointRounding.AwayFromZero)
 
             If amount <> 0D Then
                 worksheet.Cell(currentRow, 5).Value = amount
@@ -101,11 +102,11 @@ Public Class CustomerLedgerReportGenerator
             If payment <> 0D Then
                 worksheet.Cell(currentRow, 6).Value = payment
             End If
-            worksheet.Cell(currentRow, 7).Value = balance
+            worksheet.Cell(currentRow, 7).Value = balanceDisplay
 
             totalAmount += amount
             totalPayments += payment
-            endingBalance = balance
+            endingBalance = balanceRaw
 
             serial += 1
             currentRow += 1
@@ -113,6 +114,6 @@ Public Class CustomerLedgerReportGenerator
 
         worksheet.Cell(totalRowIndex, 5).Value = Decimal.Round(totalAmount, 2, MidpointRounding.AwayFromZero)
         worksheet.Cell(totalRowIndex, 6).Value = Decimal.Round(totalPayments, 2, MidpointRounding.AwayFromZero)
-        worksheet.Cell(totalRowIndex, 7).Value = Decimal.Round(endingBalance, 2, MidpointRounding.AwayFromZero)
+        worksheet.Cell(totalRowIndex, 7).Value = Decimal.Round(Math.Abs(endingBalance), 2, MidpointRounding.AwayFromZero)
     End Sub
 End Class

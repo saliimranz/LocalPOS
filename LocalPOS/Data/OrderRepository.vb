@@ -349,7 +349,7 @@ ORDER BY o.CDATED DESC"
                 report.Entries.Add(New CustomerLedgerEntry() With {
                     .OrderId = order.OrderId,
                     .EntryDate = order.OrderDate,
-                    .Description = $"Order No. {order.OrderNumber}",
+                    .Description = order.OrderNumber,
                     .AmountDue = roundedTotal,
                     .PaymentReceived = 0D,
                     .BalanceAfterEntry = runningBalance,
