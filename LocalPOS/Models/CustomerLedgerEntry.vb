@@ -1,7 +1,6 @@
 Imports System
 
-Namespace LocalPOS.LocalPOS.Models
-    Public Class CustomerLedgerEntry
+Public Class CustomerLedgerEntry
         Public Property OrderId As Integer
         Public Property PaymentId As Nullable(Of Integer)
         Public Property EntryDate As Nullable(Of DateTime)
@@ -12,8 +11,7 @@ Namespace LocalPOS.LocalPOS.Models
         Public Property EntryType As CustomerLedgerEntryType
     End Class
 
-    Public Enum CustomerLedgerEntryType
-        Order
-        Payment
-    End Enum
-End Namespace
+Public Enum CustomerLedgerEntryType
+    Order
+    Payment
+End Enum
