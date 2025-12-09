@@ -53,8 +53,9 @@
                             </asp:HyperLink>
                             <asp:HyperLink runat="server"
                                 ID="lnkAddCustomer"
-                                CssClass="btn btn-outline-secondary btn-add-customer"
+                                CssClass="btn btn-purple btn-add-customer"
                                 NavigateUrl="~/AddCustomer.aspx?returnUrl=~/Default.aspx">
+                                <span class="add-product-icon" aria-hidden="true">+</span>
                                 Add customer
                             </asp:HyperLink>
                             <asp:Button runat="server"
@@ -65,7 +66,7 @@
                                 CausesValidation="false" />
                             <asp:HyperLink runat="server"
                                 ID="lnkSalesHistory"
-                                CssClass="btn btn-outline-secondary btn-sales-history"
+                                CssClass="btn btn-purple btn-sales-history"
                                 NavigateUrl="~/SalesHistory.aspx">
                                 Sales
                             </asp:HyperLink>

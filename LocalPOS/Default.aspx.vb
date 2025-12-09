@@ -14,6 +14,7 @@ Public Class _Default
     Private Const CartSessionKey As String = "POS_CART"
     Private Const DiscountModePercent As String = "Percent"
     Private Const DiscountModeAmount As String = "Amount"
+    Private Const PosCustomersRefreshKey As String = "PosCustomersNeedsRefresh"
     Private ReadOnly _posService As New PosService()
 
     Private ReadOnly Property TaxRate As Decimal
@@ -100,6 +101,8 @@ Public Class _Default
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
         litTaxRate.Text = String.Format(CultureInfo.CurrentCulture, "{0:P0}", TaxRate)
         hfCurrencySymbol.Value = CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol
+        Dim requestedCustomerId = ConsumeNewCustomerId()
+        Dim shouldRefreshCustomers = requestedCustomerId > 0
 
         If Not IsPostBack Then
             lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
@@ -116,6 +119,12 @@ Public Class _Default
             BindCart()
             UpdatePaymentAvailability()
             litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
+        ElseIf shouldRefreshCustomers Then
+            BindCustomers()
+        End If
+
+        If requestedCustomerId > 0 Then
+            SetSelectedCustomer(requestedCustomerId)
         End If
 
         UpdateCustomerProfileButtonState()
@@ -553,6 +562,29 @@ Public Class _Default
         UpdatePaymentAvailability()
         UpdateCustomerProfileButtonState()
     End Sub
+
+    Private Function ConsumeNewCustomerId() As Integer
+        Dim requestedId As Integer
+        Dim rawQuery = Request.QueryString("customerId")
+        If Integer.TryParse(rawQuery, NumberStyles.Integer, CultureInfo.InvariantCulture, requestedId) AndAlso requestedId >= 0 Then
+            Session(PosCustomersRefreshKey) = Nothing
+            Return requestedId
+        End If
+
+        Dim sessionValue = Session(PosCustomersRefreshKey)
+        If sessionValue IsNot Nothing Then
+            Try
+                Dim parsed As Integer
+                If Integer.TryParse(sessionValue.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, parsed) AndAlso parsed >= 0 Then
+                    Return parsed
+                End If
+            Finally
+                Session(PosCustomersRefreshKey) = Nothing
+            End Try
+        End If
+
+        Return 0
+    End Function
 
 
     Protected Sub btnClearCart_Click(sender As Object, e As EventArgs)

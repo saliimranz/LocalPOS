@@ -11,6 +11,7 @@ Public Class AddCustomer
     Inherits Page
 
     Private Const CustomerMessageSessionKey As String = "CustomerSuccessMessage"
+    Private Const PosCustomersRefreshKey As String = "PosCustomersNeedsRefresh"
     Private ReadOnly _posService As New PosService()
 
     Private ReadOnly Property DealerId As Integer
@@ -42,6 +43,7 @@ Public Class AddCustomer
             If DealerId > 0 Then
                 LoadDealer()
             Else
+                chkActive.Checked = True
                 SetDocumentStatusPlaceholders()
             End If
         End If
@@ -165,6 +167,7 @@ Public Class AddCustomer
             Dim successMessage = If(isEdit, "Customer details updated successfully.", "Customer created successfully.")
             ShowStatus(successMessage, True)
             QueueSuccessMessage(successMessage, savedId)
+            Session(PosCustomersRefreshKey) = savedId
 
             Dim targetUrl = GetRedirectUrl(savedId)
             Dim script = $"setTimeout(function() {{ window.location = '{ResolveClientUrl(targetUrl)}'; }}, 1500);"
@@ -313,7 +316,7 @@ Public Class AddCustomer
             Return "~/CustomerProfile.aspx"
         End If
 
-        If savedDealerId > 0 AndAlso target.IndexOf("customerId=", StringComparison.OrdinalIgnoreCase) < 0 AndAlso target.IndexOf("CustomerProfile.aspx", StringComparison.OrdinalIgnoreCase) >= 0 Then
+        If savedDealerId > 0 AndAlso target.IndexOf("customerId=", StringComparison.OrdinalIgnoreCase) < 0 Then
             Dim separator = If(target.Contains("?"), "&", "?")
             Return $"{target}{separator}customerId={savedDealerId}"
         End If
