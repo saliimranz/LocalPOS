@@ -31,6 +31,14 @@ Namespace LocalPOS.Services
             Return _dealerRepository.GetDealer(dealerId)
         End Function
 
+        Public Function CreateDealer(request As DealerUpsertRequest) As Integer
+            Return _dealerRepository.CreateDealer(request)
+        End Function
+
+        Public Sub UpdateDealer(request As DealerUpsertRequest)
+            _dealerRepository.UpdateDealer(request)
+        End Sub
+
         Public Function GetProduct(productId As Integer) As Product
             Return _productRepository.GetProduct(productId)
         End Function
@@ -49,6 +57,40 @@ Namespace LocalPOS.Services
 
         Public Function GetCustomerOrders(dealerId As Integer) As IList(Of CustomerOrderSummary)
             Return _orderRepository.GetCustomerOrders(dealerId)
+        End Function
+
+        Public Function GetCustomerLedger(dealerId As Integer) As CustomerLedgerReport
+            Dim dealer = _dealerRepository.GetDealer(dealerId)
+            If dealer Is Nothing Then
+                Return Nothing
+            End If
+
+            Dim report = _orderRepository.GetCustomerLedger(dealerId)
+            If report Is Nothing Then
+                report = New CustomerLedgerReport()
+            End If
+
+            report.DealerId = dealer.Id
+            report.DealerCode = dealer.DealerCode
+            report.DealerName = dealer.DealerName
+
+            Return report
+        End Function
+
+        Public Function GetSalesHistory(filter As SalesHistoryFilter) As IList(Of SalesHistoryOrder)
+            Return _orderRepository.GetSalesHistory(filter)
+        End Function
+
+        Public Function GetReceivables() As IList(Of ReceivableReportRow)
+            Return _orderRepository.GetReceivables()
+        End Function
+
+        Public Function GetOrderReceipt(orderId As Integer) As OrderReceiptData
+            Return _orderRepository.GetOrderReceipt(orderId)
+        End Function
+
+        Public Function GetSettlementReceipt(orderId As Integer, receiptNumber As String) As PendingPaymentResult
+            Return _orderRepository.GetSettlementReceipt(orderId, receiptNumber)
         End Function
 
         Public Function GetOrderPayments(orderId As Integer) As IList(Of OrderPaymentRecord)

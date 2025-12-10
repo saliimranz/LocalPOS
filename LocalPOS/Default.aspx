@@ -11,11 +11,17 @@
                 <div id="currentDate"><asp:Literal ID="litDate" runat="server"></asp:Literal></div>
                 <div id="currentTime"><asp:Literal ID="litTime" runat="server"></asp:Literal></div>
             </div>
-            <div class="user-pill">
-                <div class="user-avatar">JS</div>
-                <div>
-                    <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
-                    <small>Cashier</small>
+            <div class="user-menu">
+                <button type="button" class="user-pill" id="btnUserMenuToggle" aria-haspopup="true">
+                    <div class="user-avatar">AD</div>
+                    <div>
+                        <div><asp:Label runat="server" ID="lblCashierName"></asp:Label></div>
+                        <small>Cashier</small>
+                    </div>
+                    <span class="user-pill-caret" aria-hidden="true"></span>
+                </button>
+                <div class="user-menu-dropdown" aria-hidden="true">
+                    <asp:LinkButton runat="server" ID="btnLogout" CssClass="user-menu-action" OnClick="btnLogout_Click" CausesValidation="false">Logout</asp:LinkButton>
                 </div>
             </div>
         </div>
@@ -45,12 +51,25 @@
                                 <span class="add-product-icon" aria-hidden="true">+</span>
                                 Add product
                             </asp:HyperLink>
+                            <asp:HyperLink runat="server"
+                                ID="lnkAddCustomer"
+                                CssClass="btn btn-purple btn-add-customer"
+                                NavigateUrl="~/AddCustomer.aspx?returnUrl=~/Default.aspx">
+                                <span class="add-product-icon" aria-hidden="true">+</span>
+                                Add customer
+                            </asp:HyperLink>
                             <asp:Button runat="server"
                                 ID="btnHeldBills"
                                 CssClass="btn btn-purple btn-held-bills"
                                 Text="Held bills"
                                 OnClick="btnHeldBills_Click"
                                 CausesValidation="false" />
+                            <asp:HyperLink runat="server"
+                                ID="lnkSalesHistory"
+                                CssClass="btn btn-purple btn-sales-history"
+                                NavigateUrl="~/SalesHistory.aspx">
+                                Sales
+                            </asp:HyperLink>
                         </div>
 
                         <div class="category-pills">
@@ -152,14 +171,28 @@
                             <p>Cart is empty. Add products to start.</p>
                         </asp:Panel>
 
-                        <div>
-                            <label class="form-label fw-semibold">Discount %</label>
-                            <asp:TextBox runat="server" ID="txtDiscount" CssClass="discount-input" TextMode="Number" AutoPostBack="true" Min="0" Max="100" step="0.5" OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
+                        <div class="cart-discount-control">
+                            <div class="discount-row">
+                                <label class="form-label fw-semibold mb-0">Discount</label>
+                                <asp:DropDownList runat="server" ID="ddlDiscountMode" CssClass="form-select discount-mode-select" AutoPostBack="true" OnSelectedIndexChanged="ddlDiscountMode_SelectedIndexChanged">
+                                    <asp:ListItem Text="Percentage" Value="Percent" Selected="True"></asp:ListItem>
+                                    <asp:ListItem Text="Value" Value="Amount"></asp:ListItem>
+                                </asp:DropDownList>
+                            </div>
+                            <asp:TextBox runat="server" ID="txtDiscount" CssClass="discount-input" TextMode="Number" AutoPostBack="true" min="0" step="0.01" OnTextChanged="txtDiscount_TextChanged"></asp:TextBox>
                         </div>
 
                         <div class="summary-card">
                             <div class="summary-row">
-                                <span>Subtotal</span>
+                                <span>Subtotal (Before Discount)</span>
+                                <strong><asp:Literal runat="server" ID="litSubtotalBeforeDiscount"></asp:Literal></strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Discount</span>
+                                <strong class="text-success"><asp:Literal runat="server" ID="litDiscountAmount"></asp:Literal></strong>
+                            </div>
+                            <div class="summary-row">
+                                <span>Subtotal (After Discount)</span>
                                 <strong><asp:Literal runat="server" ID="litSubtotal"></asp:Literal></strong>
                             </div>
                             <div class="summary-row">
@@ -359,6 +392,7 @@
                 <asp:HiddenField runat="server" ID="hfTaxableAmount" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfDefaultTaxPercent" ClientIDMode="Static" />
                 <asp:HiddenField runat="server" ID="hfActiveHeldSaleId" ClientIDMode="Static" />
+                <asp:HiddenField runat="server" ID="hfReceiptDownloadUrl" ClientIDMode="Static" />
 
                 <div class="modal fade modal-pos" id="holdConfirmModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">

@@ -3,12 +3,14 @@ Imports System.Collections.Generic
 Imports System.Configuration
 Imports System.Globalization
 Imports System.Linq
+Imports System.Web
 Imports LocalPOS.LocalPOS.Models
 Imports LocalPOS.LocalPOS.Services
 
 Public Partial Class CustomerProfile
     Inherits Page
 
+    Private Const CustomerMessageSessionKey As String = "CustomerSuccessMessage"
     Private ReadOnly _posService As New PosService()
 
     Private ReadOnly Property CustomerId As Integer
@@ -28,6 +30,7 @@ Public Partial Class CustomerProfile
             lblCashierName.Text = ConfigurationManager.AppSettings("PosDefaultCashier")
             hfIsCorporateCustomer.Value = "false"
             LoadCustomer()
+            ShowQueuedMessage()
         End If
     End Sub
 
@@ -37,6 +40,7 @@ Public Partial Class CustomerProfile
             lblPageMessage.CssClass = "d-block mb-3 text-danger"
             lblPageMessage.Text = "Customer not found."
             upOrders.Visible = False
+            lnkEditCustomer.Visible = False
             Return
         End If
 
@@ -46,7 +50,34 @@ Public Partial Class CustomerProfile
         litCustomerPhone.Text = If(String.IsNullOrWhiteSpace(dealer.CellNumber), "-", dealer.CellNumber)
         litCustomerCity.Text = If(String.IsNullOrWhiteSpace(dealer.City), "-", dealer.City)
 
+        If dealer.Id > 0 Then
+            Dim ledgerUrl = $"~/CustomerLedger.ashx?customerId={dealer.Id}"
+            lnkDownloadLedger.NavigateUrl = ResolveClientUrl(ledgerUrl)
+            lnkDownloadLedger.Visible = True
+            Dim currentProfileUrl = $"~/CustomerProfile.aspx?customerId={dealer.Id}"
+            Dim encodedReturn = HttpUtility.UrlEncode(currentProfileUrl)
+            lnkEditCustomer.NavigateUrl = ResolveClientUrl($"~/AddCustomer.aspx?id={dealer.Id}&returnUrl={encodedReturn}")
+            lnkEditCustomer.Visible = True
+        Else
+            lnkDownloadLedger.Visible = False
+            lnkEditCustomer.Visible = False
+        End If
+
         BindOrders()
+    End Sub
+
+    Private Sub ShowQueuedMessage()
+        Dim pending = TryCast(Session(CustomerMessageSessionKey), String)
+        If String.IsNullOrWhiteSpace(pending) Then
+            Return
+        End If
+
+        If String.IsNullOrWhiteSpace(lblPageMessage.Text) Then
+            lblPageMessage.CssClass = "d-block mb-3 text-success"
+            lblPageMessage.Text = pending
+        End If
+
+        Session(CustomerMessageSessionKey) = Nothing
     End Sub
 
         Private Sub BindOrders()
@@ -257,9 +288,10 @@ Public Partial Class CustomerProfile
 
                 request.PaymentAmount = context.OutstandingAmount
                 Dim result = _posService.CompletePendingPayment(request)
-                Dim receiptPath = SaveSettlementReceipt(result)
-                If Not String.IsNullOrWhiteSpace(receiptPath) Then
-                    result.ReceiptFilePath = receiptPath
+                Dim receiptUrl = BuildSettlementReceiptUrl(result)
+                If Not String.IsNullOrWhiteSpace(receiptUrl) Then
+                    result.ReceiptFilePath = receiptUrl
+                    TriggerSettlementDownload(receiptUrl, result.OrderId)
                 End If
 
                 BindOrders()
@@ -268,10 +300,7 @@ Public Partial Class CustomerProfile
                 ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HidePaymentModal", "PosUI.hidePaymentModal();", True)
 
                 lblPageMessage.CssClass = "d-block mb-3 text-success"
-                Dim confirmation = $"Order {result.OrderNumber} marked complete. Receipt {result.ReceiptNumber}."
-                If Not String.IsNullOrWhiteSpace(result.ReceiptFilePath) Then
-                    confirmation &= " Receipt PDF saved to recipts folder."
-                End If
+                Dim confirmation = $"Order {result.OrderNumber} marked complete. Receipt {result.ReceiptNumber} ready to download."
                 lblPageMessage.Text = confirmation
             Catch ex As Exception
                 lblCheckoutError.Text = $"Unable to complete payment: {ex.Message}"
@@ -294,12 +323,22 @@ Public Partial Class CustomerProfile
             litCashChange.Text = (0D).ToString("C", CultureInfo.CurrentCulture)
         End Sub
 
-    Private Function SaveSettlementReceipt(result As PendingPaymentResult) As String
-        Try
-            Dim generator = New ReceiptGenerator(Server.MapPath("~"))
-            Return generator.GenerateSettlementReceipt(result)
-        Catch
+    Private Function BuildSettlementReceiptUrl(result As PendingPaymentResult) As String
+        If result Is Nothing OrElse result.OrderId <= 0 OrElse String.IsNullOrWhiteSpace(result.ReceiptNumber) Then
             Return String.Empty
-        End Try
+        End If
+
+        Dim encodedReference = HttpUtility.UrlEncode(result.ReceiptNumber)
+        Return ResolveClientUrl($"~/ReceiptDownload.ashx?mode=settlement&orderId={result.OrderId}&receipt={encodedReference}")
     End Function
+
+    Private Sub TriggerSettlementDownload(url As String, orderId As Integer)
+        If String.IsNullOrWhiteSpace(url) Then
+            Return
+        End If
+
+        Dim safeUrl = HttpUtility.JavaScriptStringEncode(url)
+        Dim script = $"PosUI.downloadReceipt('{safeUrl}');"
+        ScriptManager.RegisterStartupScript(Me, Me.GetType(), $"SettlementReceipt{orderId}", script, True)
+    End Sub
 End Class

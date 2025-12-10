@@ -4,10 +4,18 @@
     <div class="customer-profile-shell">
         <div class="pos-header customer-profile-header">
             <div>
-                <asp:HyperLink runat="server" ID="lnkBackToPos" CssClass="btn btn-light btn-back-to-pos" NavigateUrl="~/Default.aspx">
-                    <span class="back-icon" aria-hidden="true">&larr;</span>
-                    Back to POS
-                </asp:HyperLink>
+                <div class="profile-header-actions">
+                    <asp:HyperLink runat="server" ID="lnkBackToPos" CssClass="btn btn-light btn-back-to-pos" NavigateUrl="~/Default.aspx">
+                        <span class="back-icon" aria-hidden="true">&larr;</span>
+                        Back to POS
+                    </asp:HyperLink>
+                    <asp:HyperLink runat="server"
+                        ID="lnkEditCustomer"
+                        CssClass="btn btn-outline-light btn-edit-customer"
+                        Visible="false">
+                        Edit customer
+                    </asp:HyperLink>
+                </div>
                 <div class="terminal-name">
                     <asp:Literal runat="server" ID="litCustomerName"></asp:Literal>
                 </div>
@@ -53,6 +61,14 @@
                 <div class="balance-row">
                     <span>Outstanding</span>
                     <strong><asp:Literal runat="server" ID="litOutstandingTotal"></asp:Literal></strong>
+                </div>
+                <div class="mt-3 text-end">
+                    <asp:HyperLink runat="server"
+                        ID="lnkDownloadLedger"
+                        CssClass="btn btn-outline-primary btn-sm"
+                        Text="Download Ledger"
+                        Target="_blank"
+                        Visible="false"></asp:HyperLink>
                 </div>
             </div>
         </div>

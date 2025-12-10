@@ -41,6 +41,15 @@ Partial Public Class _Default
     Protected WithEvents lblCashierName As Global.System.Web.UI.WebControls.Label
 
     '''<summary>
+    '''btnLogout control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents btnLogout As Global.System.Web.UI.WebControls.LinkButton
+
+    '''<summary>
     '''upPos control.
     '''</summary>
     '''<remarks>
@@ -84,6 +93,15 @@ Partial Public Class _Default
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
     Protected WithEvents lnkManageProducts As Global.System.Web.UI.WebControls.HyperLink
+
+    '''<summary>
+    '''lnkAddCustomer control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents lnkAddCustomer As Global.System.Web.UI.WebControls.HyperLink
 
     '''<summary>
     '''btnAllCategories control.
@@ -183,6 +201,33 @@ Partial Public Class _Default
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
     Protected WithEvents txtDiscount As Global.System.Web.UI.WebControls.TextBox
+
+    '''<summary>
+    '''ddlDiscountMode control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents ddlDiscountMode As Global.System.Web.UI.WebControls.DropDownList
+
+    '''<summary>
+    '''litSubtotalBeforeDiscount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litSubtotalBeforeDiscount As Global.System.Web.UI.WebControls.Literal
+
+    '''<summary>
+    '''litDiscountAmount control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents litDiscountAmount As Global.System.Web.UI.WebControls.Literal
 
     '''<summary>
     '''litSubtotal control.
@@ -552,4 +597,13 @@ Partial Public Class _Default
     '''To modify move field declaration from designer file to code-behind file.
     '''</remarks>
     Protected WithEvents hfActiveHeldSaleId As Global.System.Web.UI.WebControls.HiddenField
+
+    '''<summary>
+    '''hfReceiptDownloadUrl control.
+    '''</summary>
+    '''<remarks>
+    '''Auto-generated field.
+    '''To modify move field declaration from designer file to code-behind file.
+    '''</remarks>
+    Protected WithEvents hfReceiptDownloadUrl As Global.System.Web.UI.WebControls.HiddenField
 End Class
