@@ -398,6 +398,11 @@
         return document.querySelector('input[type="search"][name$="txtSearch"], input[type="search"][id$="txtSearch"], input[type="search"][aria-label="Search products"]');
     }
 
+    function getCatalogSearchButton() {
+        // asp:Button renders as <input type="submit" ...>, sometimes <button>.
+        return document.querySelector('input[name$="btnSearch"], input[id$="btnSearch"], button[name$="btnSearch"], button[id$="btnSearch"]');
+    }
+
     function isCatalogSearchInput(node) {
         if (!node || node.tagName !== 'INPUT') {
             return false;
@@ -427,13 +432,14 @@
     }
 
     function postBackCatalogSearch(searchInput) {
-        if (!searchInput || !searchInput.name) {
+        var targetControl = getCatalogSearchButton() || searchInput;
+        if (!targetControl || !targetControl.name) {
             return;
         }
         if (typeof window.__doPostBack !== 'function') {
             return;
         }
-        window.__doPostBack(searchInput.name, '');
+        window.__doPostBack(targetControl.name, '');
     }
 
     var lastCatalogSearchValueByTarget = Object.create(null);
@@ -455,8 +461,7 @@
             return;
         }
 
-        function handleValueChangeEvent(e) {
-            var target = e && e.target;
+        function evaluatePotentialReset(target) {
             if (!isCatalogSearchInput(target)) {
                 return;
             }
@@ -475,6 +480,15 @@
             // Only trigger when transitioning non-empty -> empty.
             if (previous !== '' && current === '') {
                 postBackCatalogSearch(target);
+            }
+        }
+
+        function handleValueChangeEvent(e) {
+            var target = e && e.target;
+            // Some browsers update the value *after* the event fires (notably for the search clear "x").
+            // Defer the check to the next tick to read the final value.
+            if (target) {
+                setTimeout(function () { evaluatePotentialReset(target); }, 0);
             }
         }
 
@@ -497,6 +511,41 @@
         if (document.documentElement) {
             document.documentElement.dataset.posCatalogSearchDelegatesWired = 'true';
         }
+    }
+
+    function startCatalogSearchEmptyMonitor(searchInput) {
+        if (!searchInput) {
+            return;
+        }
+        if (searchInput.dataset.posEmptyMonitorActive === 'true') {
+            return;
+        }
+
+        var key = searchInput.name || searchInput.id;
+        if (!key) {
+            return;
+        }
+
+        var intervalId = window.setInterval(function () {
+            // Only monitor while focused to avoid polling overhead.
+            if (document.activeElement !== searchInput) {
+                window.clearInterval(intervalId);
+                searchInput.dataset.posEmptyMonitorActive = 'false';
+                return;
+            }
+
+            var current = (searchInput.value || '').trim();
+            var previous = (lastCatalogSearchValueByTarget[key] || '').trim();
+
+            lastCatalogSearchValueByTarget[key] = current;
+            if (previous !== '' && current === '') {
+                window.clearInterval(intervalId);
+                searchInput.dataset.posEmptyMonitorActive = 'false';
+                postBackCatalogSearch(searchInput);
+            }
+        }, 150);
+
+        searchInput.dataset.posEmptyMonitorActive = 'true';
     }
 
     function wireCatalogSearchAutoReset() {
@@ -530,6 +579,12 @@
             if (e && e.key === 'Enter') {
                 postBackCatalogSearch(searchInput);
             }
+        });
+
+        // Fallback: monitor while focused so "clear (x)" that emits no events still works.
+        searchInput.addEventListener('focus', function () {
+            initCatalogSearchState();
+            startCatalogSearchEmptyMonitor(searchInput);
         });
 
         searchInput.dataset.posCatalogSearchWired = 'true';
