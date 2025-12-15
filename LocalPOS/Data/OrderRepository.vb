@@ -1095,7 +1095,7 @@ ORDER BY SPPSOID, ITEMNAME"
 
                 Using reader = command.ExecuteReader()
                     While reader.Read()
-                        Dim orderId = reader.GetInt32(reader.GetOrdinal("SPPSOID"))
+                        Dim orderId = GetDbInt32(reader, "SPPSOID")
                         Dim lineItem As New OrderLineItem() With {
                             .ProductId = reader.GetInt32(reader.GetOrdinal("ITEMID")),
                             .Name = reader.GetString(reader.GetOrdinal("ITEMNAME")),
@@ -1103,8 +1103,8 @@ ORDER BY SPPSOID, ITEMNAME"
                             .UnitPrice = reader.GetDecimal(reader.GetOrdinal("RP")),
                             .LineTotal = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
                             .TaxRate = reader.GetDecimal(reader.GetOrdinal("ST")),
-                            .TaxAmount = reader.GetDecimal(reader.GetOrdinal("Advance_Tax")),
-                            .DiscountAmount = reader.GetDecimal(reader.GetOrdinal("Total_Discount"))
+                            .TaxAmount = GetDbDecimal(reader, "Advance_Tax"),
+                            .DiscountAmount = GetDbDecimal(reader, "Total_Discount")
                         }
 
                         Dim items As List(Of OrderLineItem) = Nothing
@@ -1118,6 +1118,71 @@ ORDER BY SPPSOID, ITEMNAME"
             End Using
 
             Return result
+        End Function
+
+        Private Shared Function GetDbInt32(reader As SqlDataReader, columnName As String) As Integer
+            Dim ordinal = reader.GetOrdinal(columnName)
+            If reader.IsDBNull(ordinal) Then
+                Return 0
+            End If
+
+            Dim raw = reader.GetValue(ordinal)
+            If TypeOf raw Is Integer Then
+                Return CInt(raw)
+            End If
+            If TypeOf raw Is Long Then
+                Dim value = CLng(raw)
+                If value > Integer.MaxValue Then
+                    Return Integer.MaxValue
+                End If
+                If value < Integer.MinValue Then
+                    Return Integer.MinValue
+                End If
+                Return CInt(value)
+            End If
+            If TypeOf raw Is Decimal Then
+                Return Convert.ToInt32(raw, CultureInfo.InvariantCulture)
+            End If
+            If TypeOf raw Is String Then
+                Dim parsed As Integer
+                If Integer.TryParse(CStr(raw), NumberStyles.Integer, CultureInfo.InvariantCulture, parsed) Then
+                    Return parsed
+                End If
+            End If
+
+            Return Convert.ToInt32(raw, CultureInfo.InvariantCulture)
+        End Function
+
+        Private Shared Function GetDbDecimal(reader As SqlDataReader, columnName As String) As Decimal
+            Dim ordinal = reader.GetOrdinal(columnName)
+            If reader.IsDBNull(ordinal) Then
+                Return 0D
+            End If
+
+            Dim raw = reader.GetValue(ordinal)
+            If TypeOf raw Is Decimal Then
+                Return CDec(raw)
+            End If
+            If TypeOf raw Is Double Then
+                Return Convert.ToDecimal(CDbl(raw), CultureInfo.InvariantCulture)
+            End If
+            If TypeOf raw Is Single Then
+                Return Convert.ToDecimal(CSng(raw), CultureInfo.InvariantCulture)
+            End If
+            If TypeOf raw Is Integer Then
+                Return Convert.ToDecimal(CInt(raw), CultureInfo.InvariantCulture)
+            End If
+            If TypeOf raw Is Long Then
+                Return Convert.ToDecimal(CLng(raw), CultureInfo.InvariantCulture)
+            End If
+            If TypeOf raw Is String Then
+                Dim parsed As Decimal
+                If Decimal.TryParse(CStr(raw), NumberStyles.Float, CultureInfo.InvariantCulture, parsed) Then
+                    Return parsed
+                End If
+            End If
+
+            Return Convert.ToDecimal(raw, CultureInfo.InvariantCulture)
         End Function
 
         Private Shared Function GetOrderHeader(connection As SqlConnection, orderId As Integer) As OrderHeaderInfo
