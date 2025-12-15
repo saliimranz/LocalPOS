@@ -398,6 +398,34 @@
         return document.querySelector('input[type="search"][name$="txtSearch"], input[type="search"][id$="txtSearch"], input[type="search"][aria-label="Search products"]');
     }
 
+    function isCatalogSearchInput(node) {
+        if (!node || node.tagName !== 'INPUT') {
+            return false;
+        }
+        var type = (node.getAttribute('type') || '').toLowerCase();
+        // Some WebForms builds may not render type="search" reliably.
+        // Prefer matching by name/id suffix.
+        if (type && type !== 'search' && type !== 'text') {
+            return false;
+        }
+
+        var name = node.name || '';
+        var id = node.id || '';
+        if (/(^|\$)txtSearch$/i.test(name)) {
+            return true;
+        }
+        if (/txtSearch$/i.test(id)) {
+            return true;
+        }
+        if ((node.getAttribute('aria-label') || '') === 'Search products') {
+            return true;
+        }
+        if ((node.getAttribute('aria-label') || '') === 'Search products or scan barcode...') {
+            return true;
+        }
+        return false;
+    }
+
     function postBackCatalogSearch(searchInput) {
         if (!searchInput || !searchInput.name) {
             return;
@@ -406,6 +434,69 @@
             return;
         }
         window.__doPostBack(searchInput.name, '');
+    }
+
+    var lastCatalogSearchValueByTarget = Object.create(null);
+
+    function initCatalogSearchState() {
+        var input = getCatalogSearchInput();
+        if (!input) {
+            return;
+        }
+        var key = input.name || input.id;
+        if (!key) {
+            return;
+        }
+        lastCatalogSearchValueByTarget[key] = (input.value || '').trim();
+    }
+
+    function attachCatalogSearchDelegates() {
+        if (document.documentElement && document.documentElement.dataset.posCatalogSearchDelegatesWired === 'true') {
+            return;
+        }
+
+        function handleValueChangeEvent(e) {
+            var target = e && e.target;
+            if (!isCatalogSearchInput(target)) {
+                return;
+            }
+
+            var key = target.name || target.id;
+            if (!key) {
+                return;
+            }
+
+            var current = (target.value || '').trim();
+            var previous = (lastCatalogSearchValueByTarget[key] || '').trim();
+
+            // Update before posting back so repeated events don't spam.
+            lastCatalogSearchValueByTarget[key] = current;
+
+            // Only trigger when transitioning non-empty -> empty.
+            if (previous !== '' && current === '') {
+                postBackCatalogSearch(target);
+            }
+        }
+
+        // Capture phase so we still run even if the textbox is replaced / handlers stop propagation.
+        document.addEventListener('input', handleValueChangeEvent, true);
+        document.addEventListener('search', handleValueChangeEvent, true);
+        document.addEventListener('change', handleValueChangeEvent, true);
+
+        // Optional: Enter triggers a postback (useful on some mobile keyboards).
+        document.addEventListener('keydown', function (e) {
+            var target = e && e.target;
+            if (!isCatalogSearchInput(target)) {
+                return;
+            }
+            if (e.key === 'Enter') {
+                postBackCatalogSearch(target);
+            }
+        }, true);
+
+        if (document.documentElement) {
+            document.documentElement.dataset.posCatalogSearchDelegatesWired = 'true';
+        }
     }
 
     function wireCatalogSearchAutoReset() {
@@ -468,6 +559,8 @@
 
         manager.add_endRequest(function () {
             wirePaymentOptions();
+            // Re-init state after UpdatePanel replaces controls.
+            initCatalogSearchState();
             wireCatalogSearchAutoReset();
             cleanupModalArtifacts();
             flushPendingReceiptDownload();
@@ -550,6 +643,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         keepClockUpdated();
         wirePaymentOptions();
+        attachCatalogSearchDelegates();
+        initCatalogSearchState();
         wireCatalogSearchAutoReset();
         attachAjaxHandlers();
         flushPendingReceiptDownload();
