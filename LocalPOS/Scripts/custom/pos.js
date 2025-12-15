@@ -548,6 +548,62 @@
         searchInput.dataset.posEmptyMonitorActive = 'true';
     }
 
+    var catalogSearchWatchdogId = null;
+    var catalogSearchWatchdogLastKey = null;
+    var catalogSearchWatchdogLastValue = null;
+
+    function isAsyncPostBackInProgress() {
+        if (!(window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager)) {
+            return false;
+        }
+        var manager = Sys.WebForms.PageRequestManager.getInstance();
+        return manager && typeof manager.get_isInAsyncPostBack === 'function' ? manager.get_isInAsyncPostBack() : false;
+    }
+
+    function ensureCatalogSearchWatchdogStarted() {
+        if (catalogSearchWatchdogId) {
+            return;
+        }
+
+        catalogSearchWatchdogId = window.setInterval(function () {
+            if (document.hidden) {
+                return;
+            }
+
+            var input = getCatalogSearchInput();
+            if (!input) {
+                catalogSearchWatchdogLastKey = null;
+                catalogSearchWatchdogLastValue = null;
+                return;
+            }
+
+            var key = input.name || input.id || null;
+            var current = (input.value || '').trim();
+
+            if (!key) {
+                return;
+            }
+
+            // If the control was replaced, reset baseline.
+            if (catalogSearchWatchdogLastKey !== key) {
+                catalogSearchWatchdogLastKey = key;
+                catalogSearchWatchdogLastValue = current;
+                return;
+            }
+
+            var previous = (catalogSearchWatchdogLastValue || '').trim();
+            catalogSearchWatchdogLastValue = current;
+
+            // Only when transitioning non-empty -> empty.
+            if (previous !== '' && current === '') {
+                // Avoid spamming while an async postback is already running.
+                if (!isAsyncPostBackInProgress()) {
+                    postBackCatalogSearch(input);
+                }
+            }
+        }, 200);
+    }
+
     function wireCatalogSearchAutoReset() {
         var searchInput = getCatalogSearchInput();
         if (!searchInput || searchInput.dataset.posCatalogSearchWired === 'true') {
@@ -700,6 +756,7 @@
         wirePaymentOptions();
         attachCatalogSearchDelegates();
         initCatalogSearchState();
+        ensureCatalogSearchWatchdogStarted();
         wireCatalogSearchAutoReset();
         attachAjaxHandlers();
         flushPendingReceiptDownload();
