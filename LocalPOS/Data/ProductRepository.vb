@@ -24,6 +24,7 @@ Namespace LocalPOS.Data
 
         Public Function SearchProducts(Optional searchTerm As String = Nothing, Optional category As String = Nothing) As IList(Of Product)
             Dim products As New List(Of Product)()
+            Dim normalizedSearchTerm = If(searchTerm, String.Empty).Trim()
             Using connection = CreateConnection()
                 Using command = connection.CreateCommand()
                     command.CommandText =
@@ -46,13 +47,16 @@ WHERE sku.IsActive = 1
   AND (@Category IS NULL OR sp.Category = @Category)
   AND (
         @SearchTerm IS NULL OR
+        sku.DisplayName LIKE '%' + @SearchTerm + '%' OR
+        sku.DisplayDescription LIKE '%' + @SearchTerm + '%' OR
+        COALESCE(sku.DisplayName, sp.Description, sp.SP_CODE) LIKE '%' + @SearchTerm + '%' OR
         sp.Description LIKE '%' + @SearchTerm + '%' OR
         sp.SP_CODE LIKE '%' + @SearchTerm + '%' OR
         sku.SKU_CODE LIKE '%' + @SearchTerm + '%'
       )
 ORDER BY sku.DisplayName"
                     command.Parameters.AddWithValue("@Category", If(String.IsNullOrWhiteSpace(category), CType(DBNull.Value, Object), category))
-                    command.Parameters.AddWithValue("@SearchTerm", If(String.IsNullOrWhiteSpace(searchTerm), CType(DBNull.Value, Object), searchTerm))
+                    command.Parameters.AddWithValue("@SearchTerm", If(String.IsNullOrWhiteSpace(normalizedSearchTerm), CType(DBNull.Value, Object), normalizedSearchTerm))
 
                     Using reader = command.ExecuteReader()
                         While reader.Read()
