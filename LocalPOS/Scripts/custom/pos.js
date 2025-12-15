@@ -394,296 +394,24 @@
         flushPendingReceiptDownload();
     }
 
-    function getCatalogSearchInput() {
-        // WebForms can render TextMode="Search" inconsistently across browsers/versions.
-        // Match primarily by UniqueID/name or id suffix, regardless of type.
-        return document.querySelector(
-            'input[name$="txtSearch"], input[id$="txtSearch"], input[aria-label="Search products"], input[aria-label="Search products or scan barcode..."]'
-        );
-    }
-
-    function getCatalogSearchButton() {
-        // asp:Button renders as <input type="submit" ...>, sometimes <button>.
-        return document.querySelector(
-            'input[name$="btnSearch"], input[id$="btnSearch"], button[name$="btnSearch"], button[id$="btnSearch"]'
-        );
-    }
-
-    function isCatalogSearchInput(node) {
-        if (!node || node.tagName !== 'INPUT') {
-            return false;
-        }
-        var type = (node.getAttribute('type') || '').toLowerCase();
-        // Some WebForms builds may not render type="search" reliably.
-        // Prefer matching by name/id suffix.
-        if (type && type !== 'search' && type !== 'text') {
-            return false;
-        }
-
-        var name = node.name || '';
-        var id = node.id || '';
-        if (/(^|\$)txtSearch$/i.test(name)) {
-            return true;
-        }
-        if (/txtSearch$/i.test(id)) {
-            return true;
-        }
-        if ((node.getAttribute('aria-label') || '') === 'Search products') {
-            return true;
-        }
-        if ((node.getAttribute('aria-label') || '') === 'Search products or scan barcode...') {
-            return true;
-        }
-        return false;
-    }
-
-    function postBackCatalogSearch(searchInput) {
-        var targetControl = getCatalogSearchButton() || searchInput;
-        if (!targetControl || !targetControl.name) {
-            return;
-        }
-        if (typeof window.__doPostBack !== 'function') {
-            return;
-        }
-        window.__doPostBack(targetControl.name, '');
-    }
-
-    var lastCatalogSearchValueByTarget = Object.create(null);
-
-    function initCatalogSearchState() {
-        var input = getCatalogSearchInput();
-        if (!input) {
-            return;
-        }
-        var key = input.name || input.id;
-        if (!key) {
-            return;
-        }
-        lastCatalogSearchValueByTarget[key] = (input.value || '').trim();
-    }
-
-    function attachCatalogSearchDelegates() {
-        if (document.documentElement && document.documentElement.dataset.posCatalogSearchDelegatesWired === 'true') {
-            return;
-        }
-
-        function evaluatePotentialReset(target) {
-            if (!isCatalogSearchInput(target)) {
-                return;
-            }
-
-            var key = target.name || target.id;
-            if (!key) {
-                return;
-            }
-
-            var current = (target.value || '').trim();
-            var previous = (lastCatalogSearchValueByTarget[key] || '').trim();
-
-            // Update before posting back so repeated events don't spam.
-            lastCatalogSearchValueByTarget[key] = current;
-
-            // Only trigger when transitioning non-empty -> empty.
-            if (previous !== '' && current === '') {
-                postBackCatalogSearch(target);
-            }
-        }
-
-        function handleValueChangeEvent(e) {
-            var target = e && e.target;
-            // Some browsers update the value *after* the event fires (notably for the search clear "x").
-            // Defer the check to the next tick to read the final value.
-            if (target) {
-                setTimeout(function () { evaluatePotentialReset(target); }, 0);
-            }
-        }
-
-        // Capture phase so we still run even if the textbox is replaced / handlers stop propagation.
-        document.addEventListener('input', handleValueChangeEvent, true);
-        document.addEventListener('search', handleValueChangeEvent, true);
-        document.addEventListener('change', handleValueChangeEvent, true);
-
-        // Optional: Enter triggers a postback (useful on some mobile keyboards).
-        document.addEventListener('keydown', function (e) {
-            var target = e && e.target;
-            if (!isCatalogSearchInput(target)) {
-                return;
-            }
-            if (e.key === 'Enter') {
-                postBackCatalogSearch(target);
-            }
-        }, true);
-
-        if (document.documentElement) {
-            document.documentElement.dataset.posCatalogSearchDelegatesWired = 'true';
-        }
-    }
-
-    function startCatalogSearchEmptyMonitor(searchInput) {
-        if (!searchInput) {
-            return;
-        }
-        if (searchInput.dataset.posEmptyMonitorActive === 'true') {
-            return;
-        }
-
-        var key = searchInput.name || searchInput.id;
-        if (!key) {
-            return;
-        }
-
-        var intervalId = window.setInterval(function () {
-            // Only monitor while focused to avoid polling overhead.
-            if (document.activeElement !== searchInput) {
-                window.clearInterval(intervalId);
-                searchInput.dataset.posEmptyMonitorActive = 'false';
-                return;
-            }
-
-            var current = (searchInput.value || '').trim();
-            var previous = (lastCatalogSearchValueByTarget[key] || '').trim();
-
-            lastCatalogSearchValueByTarget[key] = current;
-            if (previous !== '' && current === '') {
-                window.clearInterval(intervalId);
-                searchInput.dataset.posEmptyMonitorActive = 'false';
-                postBackCatalogSearch(searchInput);
-            }
-        }, 150);
-
-        searchInput.dataset.posEmptyMonitorActive = 'true';
-    }
-
-    var catalogSearchWatchdogId = null;
-    var catalogSearchWatchdogLastKey = null;
-    var catalogSearchWatchdogLastValue = null;
-
-    function isAsyncPostBackInProgress() {
-        if (!(window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager)) {
-            return false;
-        }
-        var manager = Sys.WebForms.PageRequestManager.getInstance();
-        return manager && typeof manager.get_isInAsyncPostBack === 'function' ? manager.get_isInAsyncPostBack() : false;
-    }
-
-    function ensureCatalogSearchWatchdogStarted() {
-        if (catalogSearchWatchdogId) {
-            return;
-        }
-
-        catalogSearchWatchdogId = window.setInterval(function () {
-            if (document.hidden) {
-                return;
-            }
-
-            var input = getCatalogSearchInput();
-            if (!input) {
-                catalogSearchWatchdogLastKey = null;
-                catalogSearchWatchdogLastValue = null;
-                return;
-            }
-
-            var key = input.name || input.id || null;
-            var current = (input.value || '').trim();
-
-            if (!key) {
-                return;
-            }
-
-            // If the control was replaced, reset baseline.
-            if (catalogSearchWatchdogLastKey !== key) {
-                catalogSearchWatchdogLastKey = key;
-                catalogSearchWatchdogLastValue = current;
-                return;
-            }
-
-            var previous = (catalogSearchWatchdogLastValue || '').trim();
-            catalogSearchWatchdogLastValue = current;
-
-            // Only when transitioning non-empty -> empty.
-            if (previous !== '' && current === '') {
-                // Avoid spamming while an async postback is already running.
-                if (!isAsyncPostBackInProgress()) {
-                    postBackCatalogSearch(input);
-                }
-            }
-        }, 200);
-    }
-
-    function wireCatalogSearchAutoReset() {
-        var searchInput = getCatalogSearchInput();
-        if (!searchInput || searchInput.dataset.posCatalogSearchWired === 'true') {
-            return;
-        }
-
-        function getNormalizedValue() {
-            return (searchInput.value || '').trim();
-        }
-
-        searchInput.dataset.posLastNormalizedValue = getNormalizedValue();
-
-        function handlePotentialReset() {
-            var previous = (searchInput.dataset.posLastNormalizedValue || '').trim();
-            var current = getNormalizedValue();
-            searchInput.dataset.posLastNormalizedValue = current;
-
-            if (previous !== '' && current === '') {
-                postBackCatalogSearch(searchInput);
-            }
-        }
-
-        // Fires on typing/backspace and on the type="search" clear (x) in most browsers.
-        searchInput.addEventListener('input', handlePotentialReset);
-        searchInput.addEventListener('search', handlePotentialReset);
-
-        // Optional: Enter triggers a postback even if TextChanged wouldn't fire.
-        searchInput.addEventListener('keydown', function (e) {
-            if (e && e.key === 'Enter') {
-                postBackCatalogSearch(searchInput);
-            }
-        });
-
-        // Fallback: monitor while focused so "clear (x)" that emits no events still works.
-        searchInput.addEventListener('focus', function () {
-            initCatalogSearchState();
-            startCatalogSearchEmptyMonitor(searchInput);
-        });
-
-        searchInput.dataset.posCatalogSearchWired = 'true';
-    }
-
     var ajaxHandlersAttached = false;
-    var ajaxAttachAttempts = 0;
 
     function attachAjaxHandlers() {
         if (ajaxHandlersAttached) {
             return;
         }
-        if (!(window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager)) {
-            // MS AJAX might not be available yet depending on script load order.
-            // Retry a few times so we can rewire handlers after UpdatePanel refreshes.
-            if (ajaxAttachAttempts < 40) { // ~2s worst-case (40 * 50ms)
-                ajaxAttachAttempts += 1;
-                setTimeout(attachAjaxHandlers, 50);
+        if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
+            var manager = Sys.WebForms.PageRequestManager.getInstance();
+            if (!manager) {
+                return;
             }
-            return;
+            manager.add_endRequest(function () {
+                wirePaymentOptions();
+                cleanupModalArtifacts();
+                flushPendingReceiptDownload();
+            });
+            ajaxHandlersAttached = true;
         }
-
-        var manager = Sys.WebForms.PageRequestManager.getInstance();
-        if (!manager) {
-            return;
-        }
-
-        manager.add_endRequest(function () {
-            wirePaymentOptions();
-            // Re-init state after UpdatePanel replaces controls.
-            initCatalogSearchState();
-            wireCatalogSearchAutoReset();
-            cleanupModalArtifacts();
-            flushPendingReceiptDownload();
-        });
-
-        ajaxHandlersAttached = true;
     }
 
     function synchronizePaymentUi() {
@@ -760,10 +488,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         keepClockUpdated();
         wirePaymentOptions();
-        attachCatalogSearchDelegates();
-        initCatalogSearchState();
-        ensureCatalogSearchWatchdogStarted();
-        wireCatalogSearchAutoReset();
         attachAjaxHandlers();
         flushPendingReceiptDownload();
     });
