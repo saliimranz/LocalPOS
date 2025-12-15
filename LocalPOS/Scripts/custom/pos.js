@@ -394,6 +394,56 @@
         flushPendingReceiptDownload();
     }
 
+    function getCatalogSearchInput() {
+        return document.querySelector('input[type="search"][name$="txtSearch"], input[type="search"][id$="txtSearch"], input[type="search"][aria-label="Search products"]');
+    }
+
+    function postBackCatalogSearch(searchInput) {
+        if (!searchInput || !searchInput.name) {
+            return;
+        }
+        if (typeof window.__doPostBack !== 'function') {
+            return;
+        }
+        window.__doPostBack(searchInput.name, '');
+    }
+
+    function wireCatalogSearchAutoReset() {
+        var searchInput = getCatalogSearchInput();
+        if (!searchInput || searchInput.dataset.posCatalogSearchWired === 'true') {
+            return;
+        }
+
+        function getNormalizedValue() {
+            return (searchInput.value || '').trim();
+        }
+
+        searchInput.dataset.posLastNormalizedValue = getNormalizedValue();
+
+        function handlePotentialReset() {
+            var previous = (searchInput.dataset.posLastNormalizedValue || '').trim();
+            var current = getNormalizedValue();
+            searchInput.dataset.posLastNormalizedValue = current;
+
+            if (previous !== '' && current === '') {
+                postBackCatalogSearch(searchInput);
+            }
+        }
+
+        // Fires on typing/backspace and on the type="search" clear (x) in most browsers.
+        searchInput.addEventListener('input', handlePotentialReset);
+        searchInput.addEventListener('search', handlePotentialReset);
+
+        // Optional: Enter triggers a postback even if TextChanged wouldn't fire.
+        searchInput.addEventListener('keydown', function (e) {
+            if (e && e.key === 'Enter') {
+                postBackCatalogSearch(searchInput);
+            }
+        });
+
+        searchInput.dataset.posCatalogSearchWired = 'true';
+    }
+
     var ajaxHandlersAttached = false;
 
     function attachAjaxHandlers() {
@@ -407,6 +457,7 @@
             }
             manager.add_endRequest(function () {
                 wirePaymentOptions();
+                wireCatalogSearchAutoReset();
                 cleanupModalArtifacts();
                 flushPendingReceiptDownload();
             });
@@ -488,6 +539,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         keepClockUpdated();
         wirePaymentOptions();
+        wireCatalogSearchAutoReset();
         attachAjaxHandlers();
         flushPendingReceiptDownload();
     });
