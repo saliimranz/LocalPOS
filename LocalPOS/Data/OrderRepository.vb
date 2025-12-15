@@ -17,17 +17,24 @@ Namespace LocalPOS.Data
                 Throw New InvalidOperationException("Cart is empty.")
             End If
 
+            Dim cartItems = request.CartItems.ToList()
+            Dim pricing = CalculateItemWisePricing(cartItems, request.DiscountPercent, request.TaxPercent, request.TotalDue)
+            request.Subtotal = pricing.Subtotal
+            request.TaxAmount = pricing.TotalVat
+            request.TotalDue = pricing.TotalDue
+
             Dim orderNumber = GenerateOrderNumber()
             Dim inquiryNo = $"INQ-{DateTime.UtcNow:yyyyMMddHHmmss}"
             Dim paidAmount = ResolvePaidAmount(request)
-            Dim outstanding = Math.Max(0D, request.TotalDue - paidAmount)
+            paidAmount = Decimal.Round(paidAmount, 2, MidpointRounding.AwayFromZero)
+            Dim outstanding = Decimal.Round(Math.Max(0D, request.TotalDue - paidAmount), 2, MidpointRounding.AwayFromZero)
             Dim paymentReference = $"PMT-{DateTime.UtcNow:yyyyMMddHHmmssfff}"
 
             Using connection = CreateConnection()
                 Using transaction = connection.BeginTransaction()
                     Try
                         Dim orderId = InsertOrder(connection, transaction, request, orderNumber, inquiryNo, outstanding)
-                        InsertOrderItems(connection, transaction, orderId, request)
+                        InsertOrderItems(connection, transaction, orderId, cartItems, pricing.Items, request.TaxPercent)
                         Dim paymentNotes = BuildPaymentNotes(request, outstanding)
                         InsertPayment(connection, transaction, orderId, paymentReference, request.PaymentMethod, paidAmount, outstanding, request.CreatedBy, paymentNotes)
                         transaction.Commit()
@@ -100,8 +107,23 @@ VALUES
             End Using
         End Function
 
-        Private Shared Sub InsertOrderItems(connection As SqlConnection, transaction As SqlTransaction, orderId As Integer, request As CheckoutRequest)
-            For Each cartItem In request.CartItems
+        Private Shared Sub InsertOrderItems(connection As SqlConnection, transaction As SqlTransaction, orderId As Integer, cartItems As IList(Of CartItem), itemPricing As IList(Of ItemPricingLine), vatPercent As Decimal)
+            If cartItems Is Nothing OrElse cartItems.Count = 0 Then
+                Return
+            End If
+
+            Dim safeVatPercent = ClampPercent(vatPercent)
+
+            For i = 0 To cartItems.Count - 1
+                Dim cartItem = cartItems(i)
+                Dim pricing As ItemPricingLine = Nothing
+                If itemPricing IsNot Nothing AndAlso i >= 0 AndAlso i < itemPricing.Count Then
+                    pricing = itemPricing(i)
+                End If
+
+                Dim lineDiscount = If(pricing IsNot Nothing, pricing.DiscountAmount, 0D)
+                Dim lineVat = If(pricing IsNot Nothing, pricing.VatAmount, 0D)
+
                 Using command = connection.CreateCommand()
                     command.Transaction = transaction
                     command.CommandText =
@@ -114,6 +136,8 @@ VALUES
     TotalAmount,
     RP,
     ST,
+    Advance_Tax,
+    Total_Discount,
     status,
     ORDER_STATUS,
     CDATED
@@ -127,6 +151,8 @@ VALUES
     @TotalAmount,
     @UnitPrice,
     @TaxRate,
+    @AdvanceTax,
+    @TotalDiscount,
     1,
     'Completed',
     GETDATE()
@@ -137,7 +163,9 @@ VALUES
                     command.Parameters.AddWithValue("@Qty", cartItem.Quantity)
                     command.Parameters.AddWithValue("@TotalAmount", cartItem.LineTotal)
                     command.Parameters.AddWithValue("@UnitPrice", cartItem.UnitPrice)
-                    command.Parameters.AddWithValue("@TaxRate", cartItem.TaxRate)
+                    command.Parameters.AddWithValue("@TaxRate", safeVatPercent)
+                    command.Parameters.AddWithValue("@AdvanceTax", Decimal.Round(Math.Max(0D, lineVat), 2, MidpointRounding.AwayFromZero))
+                    command.Parameters.AddWithValue("@TotalDiscount", Decimal.Round(Math.Max(0D, lineDiscount), 2, MidpointRounding.AwayFromZero))
                     command.ExecuteNonQuery()
                 End Using
                 UpdateSkuQuantity(connection, transaction, cartItem.ProductId, cartItem.Quantity)
@@ -1052,7 +1080,9 @@ $"SELECT SPPSOID,
         QTY,
         TotalAmount,
         RP,
-        ST
+        ST,
+        ISNULL(Advance_Tax, 0) AS Advance_Tax,
+        ISNULL(Total_Discount, 0) AS Total_Discount
 FROM dbo.TBL_SP_PSO_ITEM
 WHERE SPPSOID IN ({String.Join(",", parameterNames)})
 ORDER BY SPPSOID, ITEMNAME"
@@ -1072,7 +1102,9 @@ ORDER BY SPPSOID, ITEMNAME"
                             .Quantity = reader.GetInt32(reader.GetOrdinal("QTY")),
                             .UnitPrice = reader.GetDecimal(reader.GetOrdinal("RP")),
                             .LineTotal = reader.GetDecimal(reader.GetOrdinal("TotalAmount")),
-                            .TaxRate = reader.GetDecimal(reader.GetOrdinal("ST"))
+                            .TaxRate = reader.GetDecimal(reader.GetOrdinal("ST")),
+                            .TaxAmount = reader.GetDecimal(reader.GetOrdinal("Advance_Tax")),
+                            .DiscountAmount = reader.GetDecimal(reader.GetOrdinal("Total_Discount"))
                         }
 
                         Dim items As List(Of OrderLineItem) = Nothing
@@ -1252,6 +1284,32 @@ ORDER BY CREATED_ON DESC, ID DESC"
                 totalDue = subtotal
             End If
 
+            Dim itemDiscountTotal = If(lineItems IsNot Nothing AndAlso lineItems.Count > 0, lineItems.Sum(Function(i) Math.Max(0D, i.DiscountAmount)), 0D)
+            Dim itemVatTotal = If(lineItems IsNot Nothing AndAlso lineItems.Count > 0, lineItems.Sum(Function(i) Math.Max(0D, i.TaxAmount)), 0D)
+            Dim itemCandidateTotal = Decimal.Round(Math.Max(0D, subtotal - itemDiscountTotal + itemVatTotal), 2, MidpointRounding.AwayFromZero)
+            Dim expectedTotal = Decimal.Round(Math.Max(0D, totalDue), 2, MidpointRounding.AwayFromZero)
+            Dim shouldUseItemFinancials = (lineItems IsNot Nothing AndAlso lineItems.Count > 0 AndAlso Math.Abs(itemCandidateTotal - expectedTotal) <= 0.02D)
+
+            If shouldUseItemFinancials Then
+                Dim taxableBase = Math.Max(0D, subtotal - itemDiscountTotal)
+                Dim discountPercent = If(subtotal > 0D, Decimal.Round((itemDiscountTotal / subtotal) * 100D, 2, MidpointRounding.AwayFromZero), 0D)
+                Dim computedVatPercent = 0D
+                If taxableBase > 0D Then
+                    computedVatPercent = Decimal.Round((itemVatTotal / taxableBase) * 100D, 2, MidpointRounding.AwayFromZero)
+                ElseIf vatPercent > 0D Then
+                    computedVatPercent = vatPercent
+                End If
+
+                Return New OrderFinancials() With {
+                    .Subtotal = Decimal.Round(Math.Max(0D, subtotal), 2, MidpointRounding.AwayFromZero),
+                    .DiscountAmount = Decimal.Round(Math.Max(0D, itemDiscountTotal), 2, MidpointRounding.AwayFromZero),
+                    .DiscountPercent = discountPercent,
+                    .TaxPercent = computedVatPercent,
+                    .TaxAmount = Decimal.Round(Math.Max(0D, itemVatTotal), 2, MidpointRounding.AwayFromZero),
+                    .TotalAmount = expectedTotal
+                }
+            End If
+
             Dim taxableBase As Decimal
             If vatPercent > 0D Then
                 Dim divisor = 1D + (vatPercent / 100D)
@@ -1272,6 +1330,144 @@ ORDER BY CREATED_ON DESC, ID DESC"
                 .TaxAmount = taxAmount,
                 .TotalAmount = totalDue
             }
+        End Function
+
+        Private Shared Function ClampPercent(value As Decimal) As Decimal
+            If value < 0D Then
+                Return 0D
+            End If
+            If value > 100D Then
+                Return 100D
+            End If
+            Return value
+        End Function
+
+        Private Shared Function ToCents(amount As Decimal) As Integer
+            Return Convert.ToInt32(Decimal.Round(amount * 100D, 0, MidpointRounding.AwayFromZero))
+        End Function
+
+        Private Shared Function FromCents(cents As Integer) As Decimal
+            Return cents / 100D
+        End Function
+
+        Private Shared Sub ReconcileRoundedAmounts(targetAmount As Decimal, values As IList(Of Decimal), maxima As IList(Of Decimal))
+            If values Is Nothing OrElse values.Count = 0 Then
+                Return
+            End If
+
+            Dim targetCents = ToCents(targetAmount)
+            Dim currentCents = values.Sum(Function(v) ToCents(v))
+            Dim delta = targetCents - currentCents
+            If delta = 0 Then
+                Return
+            End If
+
+            ' Work from the end so the "last line" absorbs rounding by default.
+            For i = values.Count - 1 To 0 Step -1
+                If delta = 0 Then
+                    Exit For
+                End If
+
+                Dim current = ToCents(values(i))
+                Dim minC = 0
+                Dim maxC = If(maxima Is Nothing OrElse i >= maxima.Count, Integer.MaxValue, ToCents(maxima(i)))
+
+                If delta > 0 Then
+                    Dim room = maxC - current
+                    If room <= 0 Then
+                        Continue For
+                    End If
+                    Dim add = Math.Min(delta, room)
+                    current += add
+                    delta -= add
+                Else
+                    Dim room = current - minC
+                    If room <= 0 Then
+                        Continue For
+                    End If
+                    Dim take = Math.Min(-delta, room)
+                    current -= take
+                    delta += take
+                End If
+
+                values(i) = FromCents(current)
+            Next
+        End Sub
+
+        Private Shared Function CalculateItemWisePricing(cartItems As IList(Of CartItem), discountPercent As Decimal, vatPercent As Decimal, totalDueTarget As Decimal) As ItemWisePricingResult
+            Dim result As New ItemWisePricingResult()
+            If cartItems Is Nothing OrElse cartItems.Count = 0 Then
+                Return result
+            End If
+
+            Dim safeVatPercent = ClampPercent(vatPercent)
+            Dim safeDiscountPercent = ClampPercent(discountPercent)
+
+            Dim lineTotals = cartItems.Select(Function(i) Math.Max(0D, i.LineTotal)).ToList()
+            Dim subtotal = lineTotals.Sum()
+
+            Dim totalDue = totalDueTarget
+            If totalDue <= 0D Then
+                ' Fallback if client didn't provide a total.
+                Dim approxDiscount = Decimal.Round(subtotal * (safeDiscountPercent / 100D), 2, MidpointRounding.AwayFromZero)
+                Dim approxTaxable = Math.Max(0D, subtotal - approxDiscount)
+                Dim approxVat = Decimal.Round(approxTaxable * (safeVatPercent / 100D), 2, MidpointRounding.AwayFromZero)
+                totalDue = Decimal.Round(approxTaxable + approxVat, 2, MidpointRounding.AwayFromZero)
+            Else
+                totalDue = Decimal.Round(totalDue, 2, MidpointRounding.AwayFromZero)
+            End If
+
+            Dim taxableBaseTarget As Decimal
+            If safeVatPercent > 0D Then
+                taxableBaseTarget = totalDue / (1D + (safeVatPercent / 100D))
+            Else
+                taxableBaseTarget = totalDue
+            End If
+
+            Dim totalVatTarget = Decimal.Round(Math.Max(0D, totalDue - taxableBaseTarget), 2, MidpointRounding.AwayFromZero)
+            Dim totalDiscountTarget = Decimal.Round(Math.Max(0D, subtotal - taxableBaseTarget), 2, MidpointRounding.AwayFromZero)
+            If totalDiscountTarget > subtotal Then
+                totalDiscountTarget = Decimal.Round(subtotal, 2, MidpointRounding.AwayFromZero)
+            End If
+
+            Dim discounts As New List(Of Decimal)(cartItems.Count)
+            Dim discountMaxima As New List(Of Decimal)(cartItems.Count)
+            For i = 0 To cartItems.Count - 1
+                discounts.Add(0D)
+                discountMaxima.Add(Decimal.Round(Math.Max(0D, lineTotals(i)), 2, MidpointRounding.AwayFromZero))
+            Next
+
+            If subtotal > 0D AndAlso totalDiscountTarget > 0D Then
+                For i = 0 To cartItems.Count - 1
+                    If i = cartItems.Count - 1 Then
+                        Continue For
+                    End If
+                    Dim weight = lineTotals(i) / subtotal
+                    discounts(i) = Decimal.Round(totalDiscountTarget * weight, 2, MidpointRounding.AwayFromZero)
+                Next
+                ReconcileRoundedAmounts(totalDiscountTarget, discounts, discountMaxima)
+            End If
+
+            Dim vats As New List(Of Decimal)(cartItems.Count)
+            For i = 0 To cartItems.Count - 1
+                Dim taxableLine = Math.Max(0D, lineTotals(i) - discounts(i))
+                vats.Add(Decimal.Round(taxableLine * (safeVatPercent / 100D), 2, MidpointRounding.AwayFromZero))
+            Next
+            ReconcileRoundedAmounts(totalVatTarget, vats, Nothing)
+
+            For i = 0 To cartItems.Count - 1
+                result.Items.Add(New ItemPricingLine() With {
+                    .LineTotal = Decimal.Round(lineTotals(i), 2, MidpointRounding.AwayFromZero),
+                    .DiscountAmount = Decimal.Round(Math.Max(0D, discounts(i)), 2, MidpointRounding.AwayFromZero),
+                    .VatAmount = Decimal.Round(Math.Max(0D, vats(i)), 2, MidpointRounding.AwayFromZero)
+                })
+            Next
+
+            result.Subtotal = Decimal.Round(Math.Max(0D, subtotal), 2, MidpointRounding.AwayFromZero)
+            result.TotalDiscount = Decimal.Round(Math.Max(0D, totalDiscountTarget), 2, MidpointRounding.AwayFromZero)
+            result.TotalVat = Decimal.Round(Math.Max(0D, totalVatTarget), 2, MidpointRounding.AwayFromZero)
+            result.TotalDue = Decimal.Round(Math.Max(0D, result.Subtotal - result.TotalDiscount + result.TotalVat), 2, MidpointRounding.AwayFromZero)
+            Return result
         End Function
 
         Private Class OrderHeaderInfo
@@ -1299,6 +1495,24 @@ ORDER BY CREATED_ON DESC, ID DESC"
             Public Property TaxPercent As Decimal
             Public Property TaxAmount As Decimal
             Public Property TotalAmount As Decimal
+        End Class
+
+        Private Class ItemPricingLine
+            Public Property LineTotal As Decimal
+            Public Property DiscountAmount As Decimal
+            Public Property VatAmount As Decimal
+        End Class
+
+        Private Class ItemWisePricingResult
+            Public Sub New()
+                Items = New List(Of ItemPricingLine)()
+            End Sub
+
+            Public Property Items As List(Of ItemPricingLine)
+            Public Property Subtotal As Decimal
+            Public Property TotalDiscount As Decimal
+            Public Property TotalVat As Decimal
+            Public Property TotalDue As Decimal
         End Class
 
         Private Class LedgerOrderSnapshot
