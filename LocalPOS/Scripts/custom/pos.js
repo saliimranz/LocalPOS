@@ -445,24 +445,35 @@
     }
 
     var ajaxHandlersAttached = false;
+    var ajaxAttachAttempts = 0;
 
     function attachAjaxHandlers() {
         if (ajaxHandlersAttached) {
             return;
         }
-        if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
-            var manager = Sys.WebForms.PageRequestManager.getInstance();
-            if (!manager) {
-                return;
+        if (!(window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager)) {
+            // MS AJAX might not be available yet depending on script load order.
+            // Retry a few times so we can rewire handlers after UpdatePanel refreshes.
+            if (ajaxAttachAttempts < 40) { // ~2s worst-case (40 * 50ms)
+                ajaxAttachAttempts += 1;
+                setTimeout(attachAjaxHandlers, 50);
             }
-            manager.add_endRequest(function () {
-                wirePaymentOptions();
-                wireCatalogSearchAutoReset();
-                cleanupModalArtifacts();
-                flushPendingReceiptDownload();
-            });
-            ajaxHandlersAttached = true;
+            return;
         }
+
+        var manager = Sys.WebForms.PageRequestManager.getInstance();
+        if (!manager) {
+            return;
+        }
+
+        manager.add_endRequest(function () {
+            wirePaymentOptions();
+            wireCatalogSearchAutoReset();
+            cleanupModalArtifacts();
+            flushPendingReceiptDownload();
+        });
+
+        ajaxHandlersAttached = true;
     }
 
     function synchronizePaymentUi() {
