@@ -395,12 +395,18 @@
     }
 
     function getCatalogSearchInput() {
-        return document.querySelector('input[type="search"][name$="txtSearch"], input[type="search"][id$="txtSearch"], input[type="search"][aria-label="Search products"]');
+        // WebForms can render TextMode="Search" inconsistently across browsers/versions.
+        // Match primarily by UniqueID/name or id suffix, regardless of type.
+        return document.querySelector(
+            'input[name$="txtSearch"], input[id$="txtSearch"], input[aria-label="Search products"], input[aria-label="Search products or scan barcode..."]'
+        );
     }
 
     function getCatalogSearchButton() {
         // asp:Button renders as <input type="submit" ...>, sometimes <button>.
-        return document.querySelector('input[name$="btnSearch"], input[id$="btnSearch"], button[name$="btnSearch"], button[id$="btnSearch"]');
+        return document.querySelector(
+            'input[name$="btnSearch"], input[id$="btnSearch"], button[name$="btnSearch"], button[id$="btnSearch"]'
+        );
     }
 
     function isCatalogSearchInput(node) {
