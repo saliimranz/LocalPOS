@@ -149,7 +149,7 @@
 
 .pos-content {
     display: grid;
-    grid-template-columns: 3fr 1.1fr;
+    grid-template-columns: minmax(0, 3fr) minmax(420px, 1.1fr);
     gap: 32px;
     padding: 32px;
 }
@@ -374,7 +374,7 @@
     border-radius: 18px;
     padding: 12px;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .cart-item img {
@@ -382,6 +382,7 @@
     height: 48px;
     border-radius: 14px;
     object-fit: cover;
+    flex: 0 0 auto;
 }
 
 .cart-item .meta {
@@ -390,30 +391,28 @@
 }
 
 .item-discount-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(120px, 160px) minmax(140px, 1fr);
     gap: 8px;
+    align-items: center;
 }
 
 .item-discount-controls .form-select,
 .item-discount-controls select {
-    flex: 0 1 140px;
     min-width: 120px;
     max-width: 100%;
 }
 
 .item-discount-controls .form-control,
 .item-discount-controls input {
-    flex: 1 1 160px;
     min-width: 140px;
     max-width: 100%;
 }
 
 @media (max-width: 520px) {
     .item-discount-controls {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
     }
 
     .item-discount-controls .form-select,
