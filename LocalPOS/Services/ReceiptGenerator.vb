@@ -114,7 +114,13 @@ Namespace LocalPOS.Services
             Dim sectionFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12.0F, BaseColor.BLACK)
             document.Add(New Paragraph("Totals", sectionFont))
             document.Add(New Paragraph($"Subtotal: {FormatCurrency(order.Subtotal)}"))
-            document.Add(New Paragraph($"Discount ({order.DiscountPercent.ToString("F2", CultureInfo.InvariantCulture)}%): {FormatCurrency(order.DiscountAmount)}"))
+            If order.ItemDiscountAmount > 0D Then
+                document.Add(New Paragraph($"Item discounts: {FormatCurrency(order.ItemDiscountAmount)}"))
+            End If
+            If order.SubtotalDiscountAmount > 0D Then
+                document.Add(New Paragraph($"Subtotal discounts: {FormatCurrency(order.SubtotalDiscountAmount)}"))
+            End If
+            document.Add(New Paragraph($"Total discount ({order.DiscountPercent.ToString("F2", CultureInfo.InvariantCulture)}%): {FormatCurrency(order.DiscountAmount)}"))
             document.Add(New Paragraph($"Tax ({order.TaxPercent.ToString("F2", CultureInfo.InvariantCulture)}%): {FormatCurrency(order.TaxAmount)}"))
             document.Add(New Paragraph($"Total due: {FormatCurrency(order.TotalAmount)}"))
             document.Add(New Paragraph($"Paid amount: {FormatCurrency(order.PaidAmount)}"))

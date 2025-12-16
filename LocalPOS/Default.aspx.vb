@@ -14,6 +14,10 @@ Public Class _Default
     Private Const CartSessionKey As String = "POS_CART"
     Private Const DiscountModePercent As String = "Percent"
     Private Const DiscountModeAmount As String = "Amount"
+    Private Const DiscountScopeItem As String = "ITEM"
+    Private Const DiscountScopeSubtotal As String = "SUBTOTAL"
+    Private Const DiscountValueTypePercent As String = "PERCENT"
+    Private Const DiscountValueTypeAmount As String = "AMOUNT"
     Private Const PosCustomersRefreshKey As String = "PosCustomersNeedsRefresh"
     Private ReadOnly _posService As New PosService()
 
@@ -166,25 +170,27 @@ Public Class _Default
         pnlEmptyCart.Visible = cart.Count = 0
         litCartCount.Text = cart.Count.ToString(CultureInfo.InvariantCulture)
 
-        Dim subtotal = cart.Sum(Function(item) item.LineTotal)
-        Dim discountPercent As Decimal
-        Dim discountAmount = CalculateDiscountAmount(subtotal, discountPercent)
-        Dim taxable = Math.Max(0D, subtotal - discountAmount)
-        Dim taxAmount = taxable * TaxRate
-        Dim total = taxable + taxAmount
+        Dim discountIntents = BuildAllDiscountIntents(cart)
+        Dim pricing = PricingEngine.Calculate(cart, TaxRate * 100D, discountIntents)
+
+        Dim subtotal = pricing.SubtotalGross
+        Dim totalDiscount = pricing.TotalDiscount
+        Dim taxable = pricing.TaxableSubtotal
+        Dim taxAmount = pricing.VatTotal
+        Dim total = pricing.TotalDue
 
         SubtotalValue = subtotal
         TaxValue = taxAmount
         TotalValue = total
-        DiscountValue = discountAmount
-        DiscountPercentValue = discountPercent
+        DiscountValue = totalDiscount
+        DiscountPercentValue = pricing.EffectiveDiscountPercent
 
         If litSubtotalBeforeDiscount IsNot Nothing Then
             litSubtotalBeforeDiscount.Text = subtotal.ToString("C", CultureInfo.CurrentCulture)
         End If
         If litDiscountAmount IsNot Nothing Then
-            Dim discountDisplay = If(discountAmount <= 0D, (0D).ToString("C", CultureInfo.CurrentCulture), discountAmount.ToString("C", CultureInfo.CurrentCulture))
-            litDiscountAmount.Text = If(discountAmount <= 0D, discountDisplay, "-" & discountDisplay)
+            Dim discountDisplay = If(totalDiscount <= 0D, (0D).ToString("C", CultureInfo.CurrentCulture), totalDiscount.ToString("C", CultureInfo.CurrentCulture))
+            litDiscountAmount.Text = If(totalDiscount <= 0D, discountDisplay, "-" & discountDisplay)
         End If
         litSubtotal.Text = taxable.ToString("C", CultureInfo.CurrentCulture)
         litTax.Text = taxAmount.ToString("C", CultureInfo.CurrentCulture)
@@ -238,6 +244,153 @@ Public Class _Default
         End If
         Return 0D
     End Function
+
+    Private Function BuildSubtotalDiscountIntents(subtotal As Decimal) As IList(Of CheckoutDiscount)
+        Dim discounts As New List(Of CheckoutDiscount)()
+        Dim inputValue = GetDiscountInputValue()
+        If inputValue <= 0D OrElse subtotal <= 0D Then
+            Return discounts
+        End If
+
+        Dim mode = GetSelectedDiscountMode()
+        Dim intent As New CheckoutDiscount() With {
+            .Scope = DiscountScopeSubtotal,
+            .Source = "Manual",
+            .Reference = String.Empty,
+            .Description = "Cart discount",
+            .Priority = 0,
+            .IsStackable = True
+        }
+
+        If mode.Equals(DiscountModeAmount, StringComparison.OrdinalIgnoreCase) Then
+            intent.ValueType = DiscountValueTypeAmount
+            intent.Value = Math.Min(inputValue, subtotal)
+        Else
+            intent.ValueType = DiscountValueTypePercent
+            intent.Value = Math.Min(inputValue, 100D)
+        End If
+
+        If intent.Value > 0D Then
+            discounts.Add(intent)
+        End If
+        Return discounts
+    End Function
+
+    Private Function BuildItemDiscountIntents(cart As IList(Of CartItem)) As IList(Of CheckoutDiscount)
+        Dim discounts As New List(Of CheckoutDiscount)()
+        If cart Is Nothing OrElse cart.Count = 0 Then
+            Return discounts
+        End If
+
+        For Each item In cart
+            If item Is Nothing OrElse item.ProductId <= 0 Then
+                Continue For
+            End If
+            Dim rawValue = Math.Max(0D, item.ItemDiscountValue)
+            If rawValue <= 0D Then
+                Continue For
+            End If
+
+            Dim mode = If(String.IsNullOrWhiteSpace(item.ItemDiscountMode), DiscountModePercent, item.ItemDiscountMode)
+            Dim intent As New CheckoutDiscount() With {
+                .Scope = DiscountScopeItem,
+                .TargetProductId = item.ProductId,
+                .Source = "Manual",
+                .Reference = String.Empty,
+                .Description = $"Item discount ({item.Name})",
+                .Priority = 0,
+                .IsStackable = True
+            }
+
+            If mode.Equals(DiscountModeAmount, StringComparison.OrdinalIgnoreCase) Then
+                intent.ValueType = DiscountValueTypeAmount
+                intent.Value = rawValue
+            Else
+                intent.ValueType = DiscountValueTypePercent
+                intent.Value = Math.Min(rawValue, 100D)
+            End If
+
+            discounts.Add(intent)
+        Next
+
+        Return discounts
+    End Function
+
+    Private Function BuildAllDiscountIntents(cart As IList(Of CartItem)) As IList(Of CheckoutDiscount)
+        Dim discounts As New List(Of CheckoutDiscount)()
+        If cart IsNot Nothing AndAlso cart.Count > 0 Then
+            discounts.AddRange(BuildItemDiscountIntents(cart))
+        End If
+
+        ' NOTE: subtotal discount applies after item discounts; engine handles ordering.
+        Dim subtotalBaseGuess = If(cart IsNot Nothing, cart.Sum(Function(i) i.LineTotal), 0D)
+        discounts.AddRange(BuildSubtotalDiscountIntents(subtotalBaseGuess))
+        Return discounts
+    End Function
+
+    Protected Sub ddlItemDiscountMode_SelectedIndexChanged(sender As Object, e As EventArgs)
+        Dim dropDown = TryCast(sender, DropDownList)
+        If dropDown Is Nothing Then
+            Return
+        End If
+        Dim container = TryCast(dropDown.NamingContainer, RepeaterItem)
+        If container Is Nothing Then
+            Return
+        End If
+        Dim productField = TryCast(container.FindControl("hfCartProductId"), HiddenField)
+        If productField Is Nothing Then
+            Return
+        End If
+
+        Dim productId As Integer
+        If Not Integer.TryParse(productField.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, productId) Then
+            Return
+        End If
+
+        Dim cart = GetCart()
+        Dim item = cart.FirstOrDefault(Function(ci) ci.ProductId = productId)
+        If item Is Nothing Then
+            Return
+        End If
+
+        item.ItemDiscountMode = If(String.IsNullOrWhiteSpace(dropDown.SelectedValue), DiscountModePercent, dropDown.SelectedValue)
+        BindCart()
+    End Sub
+
+    Protected Sub txtItemDiscountValue_TextChanged(sender As Object, e As EventArgs)
+        Dim input = TryCast(sender, TextBox)
+        If input Is Nothing Then
+            Return
+        End If
+        Dim container = TryCast(input.NamingContainer, RepeaterItem)
+        If container Is Nothing Then
+            Return
+        End If
+        Dim productField = TryCast(container.FindControl("hfCartProductId"), HiddenField)
+        If productField Is Nothing Then
+            Return
+        End If
+
+        Dim productId As Integer
+        If Not Integer.TryParse(productField.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, productId) Then
+            Return
+        End If
+
+        Dim parsed As Decimal
+        If Not Decimal.TryParse(input.Text, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) Then
+            parsed = 0D
+        End If
+        parsed = Math.Max(0D, parsed)
+
+        Dim cart = GetCart()
+        Dim item = cart.FirstOrDefault(Function(ci) ci.ProductId = productId)
+        If item Is Nothing Then
+            Return
+        End If
+
+        item.ItemDiscountValue = parsed
+        BindCart()
+    End Sub
 
     Private Function CalculateDiscountAmount(subtotal As Decimal, ByRef effectivePercent As Decimal) As Decimal
         If txtDiscount Is Nothing Then
@@ -635,7 +788,8 @@ Public Class _Default
             .Subtotal = SubtotalValue,
             .TotalAmount = TotalValue,
             .Items = cart.Select(Function(ci) ci.Clone()).ToList(),
-            .CreatedBy = lblCashierName.Text
+            .CreatedBy = lblCashierName.Text,
+            .Discounts = BuildAllDiscountIntents(cart)
         }
 
         _posService.HoldSale(request)
@@ -772,7 +926,8 @@ Public Class _Default
                 .DiscountPercent = GetDiscountPercent(),
                 .Subtotal = SubtotalValue,
                 .CartItems = cart.Select(Function(ci) ci.Clone()).ToList(),
-                .CreatedBy = lblCashierName.Text
+                .CreatedBy = lblCashierName.Text,
+                .Discounts = BuildAllDiscountIntents(cart)
             }
 
             Select Case method
@@ -905,14 +1060,42 @@ Public Class _Default
                     .UnitPrice = item.UnitPrice,
                     .Quantity = item.Quantity,
                     .TaxRate = item.TaxRate,
-                    .Thumbnail = item.ThumbnailUrl
+                    .Thumbnail = item.ThumbnailUrl,
+                    .ItemDiscountMode = DiscountModePercent,
+                    .ItemDiscountValue = 0D
                 })
             Next
         End If
 
-        txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
-        If ddlDiscountMode IsNot Nothing Then
-            ddlDiscountMode.SelectedValue = DiscountModePercent
+        ' Restore item-level discount UI from held sale discount intents (best-effort: first discount per item).
+        If detail.Discounts IsNot Nothing AndAlso detail.Discounts.Count > 0 Then
+            For Each discount In detail.Discounts
+                If discount Is Nothing OrElse discount.TargetProductId Is Nothing OrElse discount.TargetProductId.Value <= 0 Then
+                    Continue For
+                End If
+                If discount.Scope Is Nothing OrElse Not discount.Scope.Equals("ITEM", StringComparison.OrdinalIgnoreCase) Then
+                    Continue For
+                End If
+                Dim target = cart.FirstOrDefault(Function(ci) ci.ProductId = discount.TargetProductId.Value)
+                If target Is Nothing Then
+                    Continue For
+                End If
+                target.ItemDiscountMode = If(discount.ValueType IsNot Nothing AndAlso discount.ValueType.Equals("AMOUNT", StringComparison.OrdinalIgnoreCase), DiscountModeAmount, DiscountModePercent)
+                target.ItemDiscountValue = Math.Max(0D, discount.Value)
+            Next
+        End If
+
+        Dim restoredDiscount = If(detail.Discounts IsNot Nothing, detail.Discounts.FirstOrDefault(Function(d) d IsNot Nothing AndAlso d.Scope IsNot Nothing AndAlso d.Scope.Equals("SUBTOTAL", StringComparison.OrdinalIgnoreCase)), Nothing)
+        If restoredDiscount IsNot Nothing AndAlso restoredDiscount.Value > 0D Then
+            txtDiscount.Text = restoredDiscount.Value.ToString(CultureInfo.InvariantCulture)
+            If ddlDiscountMode IsNot Nothing Then
+                ddlDiscountMode.SelectedValue = If(restoredDiscount.ValueType IsNot Nothing AndAlso restoredDiscount.ValueType.Equals("AMOUNT", StringComparison.OrdinalIgnoreCase), DiscountModeAmount, DiscountModePercent)
+            End If
+        Else
+            txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
+            If ddlDiscountMode IsNot Nothing Then
+                ddlDiscountMode.SelectedValue = DiscountModePercent
+            End If
         End If
         ActiveHeldSaleId = detail.HeldSaleId
         SetSelectedCustomer(detail.DealerId)

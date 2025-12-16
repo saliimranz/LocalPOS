@@ -147,6 +147,29 @@
                                         <div class="meta">
                                             <strong><%# Eval("Name") %></strong><br />
                                             <small>SKU <%# Eval("SkuCode") %></small>
+                                            <asp:HiddenField runat="server" ID="hfCartProductId" Value='<%# Eval("ProductId") %>' />
+                                            <div class="mt-2 d-flex gap-2 align-items-center">
+                                                <asp:DropDownList runat="server"
+                                                    ID="ddlItemDiscountMode"
+                                                    CssClass="form-select form-select-sm"
+                                                    AutoPostBack="true"
+                                                    CausesValidation="false"
+                                                    OnSelectedIndexChanged="ddlItemDiscountMode_SelectedIndexChanged"
+                                                    SelectedValue='<%# Eval("ItemDiscountMode") %>'>
+                                                    <asp:ListItem Text="Item %" Value="Percent"></asp:ListItem>
+                                                    <asp:ListItem Text="Item value" Value="Amount"></asp:ListItem>
+                                                </asp:DropDownList>
+                                                <asp:TextBox runat="server"
+                                                    ID="txtItemDiscountValue"
+                                                    CssClass="form-control form-control-sm"
+                                                    TextMode="Number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    AutoPostBack="true"
+                                                    CausesValidation="false"
+                                                    OnTextChanged="txtItemDiscountValue_TextChanged"
+                                                    Text='<%# Eval("ItemDiscountValue") %>'></asp:TextBox>
+                                            </div>
                                         </div>
                                         <div class="text-end me-3">
                                             <div class="fw-bold"><%# Eval("LineTotal", "{0:C}") %></div>
