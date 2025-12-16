@@ -9,5 +9,7 @@ Namespace LocalPOS.Models
         Public Property UnitPrice As Decimal
         Public Property LineTotal As Decimal
         Public Property TaxRate As Decimal
+        Public Property DiscountAmount As Decimal
+        Public Property TaxAmount As Decimal
     End Class
 End Namespace
