@@ -1678,19 +1678,26 @@ ORDER BY ID ASC"
             Dim totalFromNotes = GetNoteDecimal(notes, "Total")
             Dim expectedTotal = Decimal.Round(Math.Max(0D, If(totalFromNotes > 0D, totalFromNotes, fallbackTotal)), 2, MidpointRounding.AwayFromZero)
 
-            Dim computedTotal = Decimal.Round(Math.Max(0D, subtotalGross - totalDiscount + taxAmount), 2, MidpointRounding.AwayFromZero)
-            Dim totalDue = computedTotal
-            If expectedTotal > 0D AndAlso Math.Abs(expectedTotal - computedTotal) <= 0.02D Then
-                totalDue = expectedTotal
-            ElseIf expectedTotal > 0D AndAlso computedTotal = 0D Then
-                totalDue = expectedTotal
-            End If
+            ' VAT percent may be present in notes for legacy orders even when line-item tax amounts are missing.
+            Dim vatPercent = GetNoteDecimal(notes, "VAT")
 
             ' If no discount metadata exists yet (e.g. migration not applied), infer subtotal discount from totals
             ' without mutating line-level discounts (keeps item vs subtotal separation).
             Dim hasDiscountMetadata = (breakdown IsNot Nothing AndAlso breakdown.Discounts IsNot Nothing AndAlso breakdown.Discounts.Count > 0)
             If Not hasDiscountMetadata AndAlso expectedTotal > 0D AndAlso subtotalGross > 0D Then
-                Dim taxableFromExpected = Math.Max(0D, expectedTotal - taxAmount)
+                Dim taxableFromExpected As Decimal
+
+                ' Legacy/pre-migration orders often have VAT% in payment notes but 0 line-item tax.
+                ' In that case, expectedTotal is VAT-inclusive and must be converted back to a taxable base
+                ' before inferring discounts; also recompute taxAmount from that same VAT%.
+                If taxAmount <= 0D AndAlso vatPercent > 0D Then
+                    Dim divisor = 1D + (vatPercent / 100D)
+                    taxableFromExpected = If(divisor = 0D, expectedTotal, Decimal.Round(expectedTotal / divisor, 2, MidpointRounding.AwayFromZero))
+                    taxAmount = Decimal.Round(Math.Max(0D, expectedTotal - taxableFromExpected), 2, MidpointRounding.AwayFromZero)
+                Else
+                    taxableFromExpected = Math.Max(0D, expectedTotal - taxAmount)
+                End If
+
                 Dim inferredTotalDiscount = Decimal.Round(Math.Max(0D, subtotalGross - taxableFromExpected), 2, MidpointRounding.AwayFromZero)
                 If inferredTotalDiscount > subtotalGross Then inferredTotalDiscount = subtotalGross
 
@@ -1699,10 +1706,29 @@ ORDER BY ID ASC"
                 totalDiscount = inferredTotalDiscount
             End If
 
-            Dim vatPercent = GetNoteDecimal(notes, "VAT")
+            ' If VAT% wasn't provided in notes, infer it from computed tax/base when possible.
             Dim taxableBase = Math.Max(0D, subtotalGross - totalDiscount)
             If vatPercent <= 0D AndAlso taxableBase > 0D AndAlso taxAmount > 0D Then
                 vatPercent = Decimal.Round((taxAmount / taxableBase) * 100D, 2, MidpointRounding.AwayFromZero)
+            End If
+
+            ' If we have VAT% but no line-item tax (legacy orders), recompute taxAmount.
+            If taxAmount <= 0D AndAlso vatPercent > 0D Then
+                If expectedTotal > 0D Then
+                    Dim divisor = 1D + (vatPercent / 100D)
+                    Dim taxableFromExpected = If(divisor = 0D, expectedTotal, Decimal.Round(expectedTotal / divisor, 2, MidpointRounding.AwayFromZero))
+                    taxAmount = Decimal.Round(Math.Max(0D, expectedTotal - taxableFromExpected), 2, MidpointRounding.AwayFromZero)
+                ElseIf taxableBase > 0D Then
+                    taxAmount = Decimal.Round(Math.Max(0D, taxableBase * (vatPercent / 100D)), 2, MidpointRounding.AwayFromZero)
+                End If
+            End If
+
+            Dim computedTotal = Decimal.Round(Math.Max(0D, subtotalGross - totalDiscount + taxAmount), 2, MidpointRounding.AwayFromZero)
+            Dim totalDue = computedTotal
+            If expectedTotal > 0D AndAlso Math.Abs(expectedTotal - computedTotal) <= 0.02D Then
+                totalDue = expectedTotal
+            ElseIf expectedTotal > 0D AndAlso computedTotal = 0D Then
+                totalDue = expectedTotal
             End If
 
             Dim effectivePercent = If(subtotalGross > 0D, Decimal.Round((totalDiscount / subtotalGross) * 100D, 2, MidpointRounding.AwayFromZero), 0D)
