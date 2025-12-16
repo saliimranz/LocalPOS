@@ -148,7 +148,7 @@
                                             <strong><%# Eval("Name") %></strong><br />
                                             <small>SKU <%# Eval("SkuCode") %></small>
                                             <asp:HiddenField runat="server" ID="hfCartProductId" Value='<%# Eval("ProductId") %>' />
-                                            <div class="mt-2 d-flex gap-2 align-items-center">
+                                            <div class="mt-2 item-discount-controls">
                                                 <asp:DropDownList runat="server"
                                                     ID="ddlItemDiscountMode"
                                                     CssClass="form-select form-select-sm"
