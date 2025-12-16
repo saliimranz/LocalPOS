@@ -415,13 +415,15 @@
 }
 
 .item-discount-controls {
-    grid-column: 2 / -1;
+    /* Place discount inputs under price/qty area (right side) */
+    grid-column: 3 / -1;
     grid-row: 2;
-    width: 100%;
+    width: min(360px, 100%);
     display: grid;
     grid-template-columns: minmax(120px, 160px) minmax(140px, 1fr);
     gap: 8px;
     align-items: center;
+    justify-self: end;
 }
 
 .item-discount-controls .form-select,
@@ -470,6 +472,8 @@
         grid-column: 2;
         grid-row: 3;
         grid-template-columns: 1fr;
+        width: 100%;
+        justify-self: stretch;
     }
 
     .item-discount-controls .form-select,
