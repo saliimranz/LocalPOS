@@ -1615,11 +1615,11 @@ ORDER BY ID ASC"
                         Dim scope = reader.GetString(reader.GetOrdinal("SCOPE"))
                         Dim appliedAmount = reader.GetDecimal(reader.GetOrdinal("APPLIED_AMOUNT"))
                         Dim summary As New AppliedDiscountSummary() With {
-                            .Scope = scope,
+                            .scope = scope,
                             .ValueType = reader.GetString(reader.GetOrdinal("VALUE_TYPE")),
                             .Value = reader.GetDecimal(reader.GetOrdinal("VALUE")),
                             .AppliedBaseAmount = reader.GetDecimal(reader.GetOrdinal("APPLIED_BASE_AMOUNT")),
-                            .AppliedAmount = appliedAmount,
+                            .appliedAmount = appliedAmount,
                             .Source = reader.GetString(reader.GetOrdinal("SOURCE")),
                             .Reference = reader.GetString(reader.GetOrdinal("REFERENCE")),
                             .Description = reader.GetString(reader.GetOrdinal("DESCRIPTION")),
@@ -1726,11 +1726,9 @@ ORDER BY ID ASC"
             Dim shouldUseItemFinancials = (lineItems IsNot Nothing AndAlso lineItems.Count > 0 AndAlso Math.Abs(itemCandidateTotal - expectedTotal) <= 0.02D)
 
             If shouldUseItemFinancials Then
-                Dim taxableBase = Math.Max(0D, subtotal - itemDiscountTotal)
-                Dim discountPercent = If(subtotal > 0D, Decimal.Round((itemDiscountTotal / subtotal) * 100D, 2, MidpointRounding.AwayFromZero), 0D)
                 Dim computedVatPercent = 0D
-                If taxableBase > 0D Then
-                    computedVatPercent = Decimal.Round((itemVatTotal / taxableBase) * 100D, 2, MidpointRounding.AwayFromZero)
+                If Math.Max(0D, subtotal - itemDiscountTotal) > 0D Then
+                    computedVatPercent = Decimal.Round((itemVatTotal / Math.Max(0D, subtotal - itemDiscountTotal)) * 100D, 2, MidpointRounding.AwayFromZero)
                 ElseIf vatPercent > 0D Then
                     computedVatPercent = vatPercent
                 End If
@@ -1740,7 +1738,7 @@ ORDER BY ID ASC"
                     .ItemDiscountAmount = Decimal.Round(Math.Max(0D, itemDiscountTotal), 2, MidpointRounding.AwayFromZero),
                     .SubtotalDiscountAmount = 0D,
                     .TotalDiscountAmount = Decimal.Round(Math.Max(0D, itemDiscountTotal), 2, MidpointRounding.AwayFromZero),
-                    .DiscountPercent = discountPercent,
+                    .DiscountPercent = If(subtotal > 0D, Decimal.Round((itemDiscountTotal / subtotal) * 100D, 2, MidpointRounding.AwayFromZero), 0D),
                     .TaxPercent = computedVatPercent,
                     .TaxAmount = Decimal.Round(Math.Max(0D, itemVatTotal), 2, MidpointRounding.AwayFromZero),
                     .TotalAmount = expectedTotal

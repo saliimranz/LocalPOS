@@ -252,7 +252,9 @@
     <Compile Include="Data\OrderRepository.vb" />
     <Compile Include="Data\ProductRepository.vb" />
     <Compile Include="Data\SqlRepositoryBase.vb" />
+    <Compile Include="Models\AppliedDiscountSummary.vb" />
     <Compile Include="Models\CartItem.vb" />
+    <Compile Include="Models\CheckoutDiscount.vb" />
     <Compile Include="Models\CustomerOrderSummary.vb" />
     <Compile Include="Models\CheckoutRequest.vb" />
     <Compile Include="Models\CheckoutResult.vb" />
@@ -282,6 +284,7 @@
     <Compile Include="Services\PosService.vb" />
     <Compile Include="Services\AuthManager.vb" />
     <Compile Include="Services\CustomerLedgerReportGenerator.vb" />
+    <Compile Include="Services\PricingEngine.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
     <Compile Include="Services\OrderInvoiceGenerator.vb" />
     <Compile Include="Services\ReceivablesReportGenerator.vb" />

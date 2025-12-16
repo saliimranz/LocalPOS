@@ -1,11 +1,10 @@
-Imports System
+﻿Imports System
 
-Namespace LocalPOS.Models
-    ''' <summary>
-    ''' Explicit discount intent sent during checkout.
-    ''' This decouples "intent/scope" from any internal allocation used for tax correctness.
-    ''' </summary>
-    Public Class CheckoutDiscount
+''' <summary>
+''' Explicit discount intent sent during checkout.
+''' This decouples "intent/scope" from any internal allocation used for tax correctness.
+''' </summary>
+Public Class CheckoutDiscount
         ''' <summary>
         ''' Discount scope/intent. Phase 1 supports: ITEM, SUBTOTAL.
         ''' </summary>
@@ -51,5 +50,4 @@ Namespace LocalPOS.Models
         ''' </summary>
         Public Property IsStackable As Boolean = True
     End Class
-End Namespace
 

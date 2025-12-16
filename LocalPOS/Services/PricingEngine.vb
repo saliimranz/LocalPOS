@@ -1,21 +1,20 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Globalization
 Imports System.Linq
 Imports LocalPOS.LocalPOS.Models
 
-Namespace LocalPOS.Services
-    ''' <summary>
-    ''' Deterministic pricing engine that separates:
-    ''' - discount intent (scope/type/source)
-    ''' - any internal allocation required for tax correctness
-    '''
-    ''' Phase 1:
-    ''' - ITEM scoped discounts (percent/amount) (multiple)
-    ''' - SUBTOTAL scoped discounts (percent/amount) (multiple) applied after item discounts
-    ''' - VAT (percent) applied after all discounts on the taxable base
-    ''' </summary>
-    Public NotInheritable Class PricingEngine
+''' <summary>
+''' Deterministic pricing engine that separates:
+''' - discount intent (scope/type/source)
+''' - any internal allocation required for tax correctness
+'''
+''' Phase 1:
+''' - ITEM scoped discounts (percent/amount) (multiple)
+''' - SUBTOTAL scoped discounts (percent/amount) (multiple) applied after item discounts
+''' - VAT (percent) applied after all discounts on the taxable base
+''' </summary>
+Public NotInheritable Class PricingEngine
         Private Sub New()
         End Sub
 
@@ -481,10 +480,9 @@ Namespace LocalPOS.Services
         Public Property Allocations As List(Of DiscountAllocation)
     End Class
 
-    Public Class DiscountAllocation
-        Public Property ProductId As Integer
-        Public Property BasisAmount As Decimal
-        Public Property AllocatedAmount As Decimal
-    End Class
-End Namespace
+Public Class DiscountAllocation
+    Public Property ProductId As Integer
+    Public Property BasisAmount As Decimal
+    Public Property AllocatedAmount As Decimal
+End Class
 
