@@ -1562,13 +1562,16 @@ ORDER BY CREATED_ON DESC, ID DESC"
                 Return breakdown
             End If
 
-            ' Default fallback: item discount stored on line items (item-scoped discounts only).
+            ' Default fallback: item discount stored on line items (legacy / pre-discount-table orders).
+            ' For orders created with the new discount system, the same ITEM discount is also persisted in
+            ' dbo.TBL_POS_DISCOUNT; when present, we must prefer the discount table to avoid double-counting.
             Dim fallbackItemDiscount = If(lineItems IsNot Nothing AndAlso lineItems.Count > 0,
                                           lineItems.Sum(Function(i) Math.Max(0D, i.DiscountAmount)),
                                           0D)
-            breakdown.ItemDiscountAmount = Decimal.Round(fallbackItemDiscount, 2, MidpointRounding.AwayFromZero)
+            Dim hasItemScopedDiscounts As Boolean = False
 
             If connection Is Nothing Then
+                breakdown.ItemDiscountAmount = Decimal.Round(Math.Max(0D, fallbackItemDiscount), 2, MidpointRounding.AwayFromZero)
                 Return breakdown
             End If
 
@@ -1587,6 +1590,7 @@ ORDER BY CREATED_ON DESC, ID DESC"
                         End If
                     End Using
                 End If
+                breakdown.ItemDiscountAmount = Decimal.Round(Math.Max(0D, fallbackItemDiscount), 2, MidpointRounding.AwayFromZero)
                 Return breakdown
             End If
 
@@ -1635,6 +1639,7 @@ ORDER BY ID ASC"
                         breakdown.Discounts.Add(summary)
 
                         If scope.Equals("ITEM", StringComparison.OrdinalIgnoreCase) Then
+                            hasItemScopedDiscounts = True
                             breakdown.ItemDiscountAmount += Math.Max(0D, appliedAmount)
                         ElseIf scope.Equals("SUBTOTAL", StringComparison.OrdinalIgnoreCase) Then
                             breakdown.SubtotalDiscountAmount += Math.Max(0D, appliedAmount)
@@ -1642,6 +1647,11 @@ ORDER BY ID ASC"
                     End While
                 End Using
             End Using
+
+            ' If the discount table had no ITEM-scoped rows, fall back to the line-item stored discount.
+            If Not hasItemScopedDiscounts Then
+                breakdown.ItemDiscountAmount = Math.Max(0D, fallbackItemDiscount)
+            End If
 
             breakdown.ItemDiscountAmount = Decimal.Round(Math.Max(0D, breakdown.ItemDiscountAmount), 2, MidpointRounding.AwayFromZero)
             breakdown.SubtotalDiscountAmount = Decimal.Round(Math.Max(0D, breakdown.SubtotalDiscountAmount), 2, MidpointRounding.AwayFromZero)
