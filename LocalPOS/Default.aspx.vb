@@ -239,6 +239,37 @@ Public Class _Default
         Return 0D
     End Function
 
+    Private Function BuildSubtotalDiscountIntents(subtotal As Decimal) As IList(Of CheckoutDiscount)
+        Dim discounts As New List(Of CheckoutDiscount)()
+        Dim inputValue = GetDiscountInputValue()
+        If inputValue <= 0D OrElse subtotal <= 0D Then
+            Return discounts
+        End If
+
+        Dim mode = GetSelectedDiscountMode()
+        Dim intent As New CheckoutDiscount() With {
+            .Scope = "SUBTOTAL",
+            .Source = "Manual",
+            .Reference = String.Empty,
+            .Description = "Cart discount",
+            .Priority = 0,
+            .IsStackable = True
+        }
+
+        If mode.Equals(DiscountModeAmount, StringComparison.OrdinalIgnoreCase) Then
+            intent.ValueType = "AMOUNT"
+            intent.Value = Math.Min(inputValue, subtotal)
+        Else
+            intent.ValueType = "PERCENT"
+            intent.Value = Math.Min(inputValue, 100D)
+        End If
+
+        If intent.Value > 0D Then
+            discounts.Add(intent)
+        End If
+        Return discounts
+    End Function
+
     Private Function CalculateDiscountAmount(subtotal As Decimal, ByRef effectivePercent As Decimal) As Decimal
         If txtDiscount Is Nothing Then
             effectivePercent = 0D
@@ -635,7 +666,8 @@ Public Class _Default
             .Subtotal = SubtotalValue,
             .TotalAmount = TotalValue,
             .Items = cart.Select(Function(ci) ci.Clone()).ToList(),
-            .CreatedBy = lblCashierName.Text
+            .CreatedBy = lblCashierName.Text,
+            .Discounts = BuildSubtotalDiscountIntents(SubtotalValue)
         }
 
         _posService.HoldSale(request)
@@ -772,7 +804,8 @@ Public Class _Default
                 .DiscountPercent = GetDiscountPercent(),
                 .Subtotal = SubtotalValue,
                 .CartItems = cart.Select(Function(ci) ci.Clone()).ToList(),
-                .CreatedBy = lblCashierName.Text
+                .CreatedBy = lblCashierName.Text,
+                .Discounts = BuildSubtotalDiscountIntents(SubtotalValue)
             }
 
             Select Case method
@@ -910,9 +943,17 @@ Public Class _Default
             Next
         End If
 
-        txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
-        If ddlDiscountMode IsNot Nothing Then
-            ddlDiscountMode.SelectedValue = DiscountModePercent
+        Dim restoredDiscount = If(detail.Discounts IsNot Nothing, detail.Discounts.FirstOrDefault(Function(d) d IsNot Nothing AndAlso d.Scope IsNot Nothing AndAlso d.Scope.Equals("SUBTOTAL", StringComparison.OrdinalIgnoreCase)), Nothing)
+        If restoredDiscount IsNot Nothing AndAlso restoredDiscount.Value > 0D Then
+            txtDiscount.Text = restoredDiscount.Value.ToString(CultureInfo.InvariantCulture)
+            If ddlDiscountMode IsNot Nothing Then
+                ddlDiscountMode.SelectedValue = If(restoredDiscount.ValueType IsNot Nothing AndAlso restoredDiscount.ValueType.Equals("AMOUNT", StringComparison.OrdinalIgnoreCase), DiscountModeAmount, DiscountModePercent)
+            End If
+        Else
+            txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
+            If ddlDiscountMode IsNot Nothing Then
+                ddlDiscountMode.SelectedValue = DiscountModePercent
+            End If
         End If
         ActiveHeldSaleId = detail.HeldSaleId
         SetSelectedCustomer(detail.DealerId)
