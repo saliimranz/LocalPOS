@@ -12,7 +12,9 @@ Namespace LocalPOS.Models
         Public Property CardAuthCode As String
         Public Property CardStatus As String
         Public Property TaxPercent As Decimal
+        ' Legacy field (deprecated). Prefer Discounts with explicit scope + type + source.
         Public Property DiscountPercent As Decimal
+        Public Property Discounts As IList(Of CheckoutDiscount)
         Public Property Subtotal As Decimal
         Public Property TaxAmount As Decimal
         Public Property TotalDue As Decimal

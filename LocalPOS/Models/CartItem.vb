@@ -13,6 +13,11 @@ Namespace LocalPOS.Models
         Public Property TaxRate As Decimal
         Public Property Thumbnail As String
 
+        ' Phase 1: optional manual item-level discount input (UI).
+        ' Stored only in-session / held-sale intent records (not persisted as part of the SKU).
+        Public Property ItemDiscountMode As String = "Percent" ' Percent | Amount
+        Public Property ItemDiscountValue As Decimal = 0D
+
         Public ReadOnly Property LineTotal As Decimal
             Get
                 Return UnitPrice * Quantity

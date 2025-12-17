@@ -15,13 +15,18 @@ Namespace LocalPOS.Models
         Public Property TotalPaid As Decimal
         Public Property OutstandingAmount As Decimal
         Public Property Subtotal As Decimal
+        ' Compatibility fields: DiscountAmount/Percent reflect TOTAL discount.
         Public Property DiscountAmount As Decimal
         Public Property DiscountPercent As Decimal
+        ' New breakdown (intent-safe):
+        Public Property ItemDiscountAmount As Decimal
+        Public Property SubtotalDiscountAmount As Decimal
         Public Property TaxPercent As Decimal
         Public Property TaxAmount As Decimal
         Public Property ReceiptNumber As String
         Public Property LineItems As IList(Of OrderLineItem)
         Public Property CashierName As String
+        Public Property Discounts As IList(Of AppliedDiscountSummary)
 
         Public ReadOnly Property HasOutstanding As Boolean
             Get

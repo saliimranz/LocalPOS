@@ -1,4 +1,4 @@
-﻿Imports System.Collections.Generic
+Imports System.Collections.Generic
 
 Namespace LocalPOS.Models
     ''' <summary>
@@ -10,6 +10,7 @@ Namespace LocalPOS.Models
         Public Property DealerName As String
         Public Property DiscountPercent As Decimal
         Public Property DiscountAmount As Decimal
+        Public Property Discounts As IList(Of CheckoutDiscount)
         Public Property TaxPercent As Decimal
         Public Property TaxAmount As Decimal
         Public Property Subtotal As Decimal
