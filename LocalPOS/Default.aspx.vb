@@ -1092,7 +1092,11 @@ Public Class _Default
                 ddlDiscountMode.SelectedValue = If(restoredDiscount.ValueType IsNot Nothing AndAlso restoredDiscount.ValueType.Equals("AMOUNT", StringComparison.OrdinalIgnoreCase), DiscountModeAmount, DiscountModePercent)
             End If
         Else
-            txtDiscount.Text = detail.DiscountPercent.ToString(CultureInfo.InvariantCulture)
+            ' IMPORTANT:
+            ' Only restore SUBTOTAL discount when it explicitly exists in the saved discount intents.
+            ' The held sale header DISCOUNT_PERCENT may represent an effective/aggregated discount
+            ' (e.g. from item-level discounts) and must not be re-applied as a subtotal discount.
+            txtDiscount.Text = "0"
             If ddlDiscountMode IsNot Nothing Then
                 ddlDiscountMode.SelectedValue = DiscountModePercent
             End If

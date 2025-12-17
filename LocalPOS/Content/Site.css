@@ -418,7 +418,7 @@
     grid-area: discount;
     width: min(420px, 100%);
     display: grid;
-    grid-template-columns: minmax(120px, 160px) minmax(140px, 1fr);
+    grid-template-columns: minmax(70px, 100px) minmax(30px, 60px);
     gap: 8px;
     align-items: center;
     justify-self: start;
@@ -432,7 +432,7 @@
 
 .item-discount-controls .form-control,
 .item-discount-controls input {
-    min-width: 140px;
+    min-width: 90px;
     max-width: 100%;
 }
 
