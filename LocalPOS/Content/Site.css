@@ -445,8 +445,8 @@
         grid-template-areas:
             "img meta meta"
             "img price price"
-            "img discount discount"
-            "img qty remove";
+            "img qty remove"
+            "img discount discount";
         align-items: start;
     }
 
