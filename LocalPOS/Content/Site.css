@@ -368,7 +368,8 @@
 }
 
 .cart-item {
-    display: grid;
+    /* Force grid layout so discount row can't sit inline with price */
+    display: grid !important;
     grid-template-columns: 48px minmax(0, 1fr) max-content max-content max-content;
     grid-template-rows: auto auto;
     grid-template-areas:
@@ -437,6 +438,8 @@
 
 @media (max-width: 520px) {
     .cart-item {
+        /* Force grid layout on narrow screens too */
+        display: grid !important;
         grid-template-columns: 48px minmax(0, 1fr) max-content;
         grid-template-rows: auto auto auto auto;
         grid-template-areas:
