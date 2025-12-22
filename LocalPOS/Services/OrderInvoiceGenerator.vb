@@ -85,12 +85,7 @@ Public Class OrderInvoiceGenerator
 
             Dim converted = TryConvertDocxToPdf(workingDocx, tempRoot, workingPdf)
             If Not converted OrElse Not File.Exists(workingPdf) Then
-                Dim fallback = GenerateFallbackPdf(order, billToBlock, remarks)
-                Return New ReportDocument() With {
-                    .FileName = $"Invoice_{order.OrderNumber}_{stamp}.pdf",
-                    .ContentType = "application/pdf",
-                    .Content = fallback
-                }
+                Throw New InvalidOperationException("Unable to convert invoice template to PDF. Ensure LibreOffice/soffice is installed on the server and accessible (PATH or standard install location).")
             End If
 
             Return New ReportDocument() With {
@@ -197,9 +192,48 @@ Public Class OrderInvoiceGenerator
             Return False
         End If
 
-        Dim candidates = New String() {"soffice", "libreoffice", "soffice.exe", "libreoffice.exe"}
+        Dim candidates As New List(Of String)()
+
+        ' 1) Allow explicit override via environment variable (safe, optional).
+        Dim envOverride = Environment.GetEnvironmentVariable("LIBREOFFICE_PATH")
+        If Not String.IsNullOrWhiteSpace(envOverride) Then
+            candidates.Add(envOverride)
+        End If
+
+        ' 2) Common PATH-resolvable names.
+        candidates.AddRange(New String() {"soffice", "libreoffice", "soffice.exe", "libreoffice.exe"})
+
+        ' 3) Common absolute locations (handles servers where LibreOffice isn't on PATH).
+        Try
+            Dim isWindows = Environment.OSVersion.Platform = PlatformID.Win32NT
+            If isWindows Then
+                Dim pf = Environment.GetEnvironmentVariable("ProgramFiles")
+                Dim pfx86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)")
+                If Not String.IsNullOrWhiteSpace(pf) Then
+                    candidates.Add(Path.Combine(pf, "LibreOffice", "program", "soffice.exe"))
+                End If
+                If Not String.IsNullOrWhiteSpace(pfx86) Then
+                    candidates.Add(Path.Combine(pfx86, "LibreOffice", "program", "soffice.exe"))
+                End If
+            Else
+                candidates.AddRange(New String() {
+                    "/usr/bin/soffice",
+                    "/usr/bin/libreoffice",
+                    "/snap/bin/libreoffice",
+                    "/opt/libreoffice/program/soffice"
+                })
+            End If
+        Catch
+        End Try
+
         For Each exe In candidates
             Try
+                If exe.IndexOf(Path.DirectorySeparatorChar) >= 0 OrElse exe.IndexOf(Path.AltDirectorySeparatorChar) >= 0 Then
+                    If Not File.Exists(exe) Then
+                        Continue For
+                    End If
+                End If
+
                 Dim psi As New ProcessStartInfo() With {
                     .FileName = exe,
                     .Arguments = $"--headless --nologo --nolockcheck --nodefault --nofirststartwizard --convert-to pdf --outdir ""{outDir}"" ""{docxPath}""",
@@ -213,7 +247,7 @@ Public Class OrderInvoiceGenerator
                     If p Is Nothing Then
                         Continue For
                     End If
-                    p.WaitForExit(60000)
+                    p.WaitForExit(120000)
                 End Using
 
                 If File.Exists(expectedPdfPath) Then
