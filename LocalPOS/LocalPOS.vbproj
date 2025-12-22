@@ -233,11 +233,13 @@
     <Content Include="Bundle.config" />
     <Content Include="recipts\.gitkeep" />
     <Content Include="Templates\Customer_Ledger.xlsx" />
+    <Content Include="Templates\Invoice_Template.pdf" />
     <Content Include="Templates\Receivables.xlsx" />
     <Content Include="Templates\Sales.xlsx" />
     <Content Include="Templates\SalesTaxInvoice.xlsx" />
     <Content Include="ReceiptDownload.ashx" />
     <Content Include="OrderInvoice.ashx" />
+    <Content Include="OrderInvoicePdf.ashx" />
     <Content Include="ReceivablesReport.ashx" />
     <Content Include="SalesReport.ashx" />
     <Content Include="SalesHistory.aspx" />
@@ -286,6 +288,7 @@
     <Compile Include="Services\CustomerLedgerReportGenerator.vb" />
     <Compile Include="Services\PricingEngine.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
+    <Compile Include="Services\InvoicePdfGenerator.vb" />
     <Compile Include="Services\OrderInvoiceGenerator.vb" />
     <Compile Include="Services\ReceivablesReportGenerator.vb" />
     <Compile Include="Services\SalesReportGenerator.vb" />
@@ -346,6 +349,9 @@
     </Compile>
     <Compile Include="OrderInvoice.ashx.vb">
       <DependentUpon>OrderInvoice.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="OrderInvoicePdf.ashx.vb">
+      <DependentUpon>OrderInvoicePdf.ashx</DependentUpon>
     </Compile>
     <Compile Include="ReceivablesReport.ashx.vb">
       <DependentUpon>ReceivablesReport.ashx</DependentUpon>

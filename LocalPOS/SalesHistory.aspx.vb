@@ -220,7 +220,9 @@ Public Class SalesHistory
             Return "#"
         End If
 
-        Return ResolveClientUrl($"~/OrderInvoice.ashx?orderId={orderId}")
+        ' Use the PDF-based invoice template for the interactive "Print Invoice" flow.
+        ' Keep the legacy Excel invoice endpoint intact for any other flows.
+        Return ResolveClientUrl($"~/OrderInvoicePdf.ashx?orderId={orderId}")
     End Function
 
     Private Sub SetDateInputs(fromDate As DateTime?, toDate As DateTime?)
