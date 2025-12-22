@@ -1,8 +1,13 @@
 Imports System
 Imports System.Collections.Generic
 Imports System.Globalization
+Imports System.Diagnostics
 Imports System.IO
 Imports ClosedXML.Excel
+Imports DocumentFormat.OpenXml.Packaging
+Imports DocumentFormat.OpenXml.Wordprocessing
+Imports iTextSharp.text
+Imports iTextSharp.text.pdf
 Imports LocalPOS.LocalPOS.Models
 
 Public Class OrderInvoiceGenerator
@@ -36,6 +41,11 @@ Public Class OrderInvoiceGenerator
             Throw New FileNotFoundException("Invoice template was not found.", templatePath)
         End If
 
+        Dim extension = Path.GetExtension(templatePath)
+        If extension IsNot Nothing AndAlso extension.Equals(".docx", StringComparison.OrdinalIgnoreCase) Then
+            Return GenerateFromWordTemplate(order, templatePath, billToBlock, remarks)
+        End If
+
         Using workbook = New XLWorkbook(templatePath)
             Dim worksheet = workbook.Worksheet(1)
             PopulateHeader(worksheet, order, billToBlock)
@@ -54,6 +64,263 @@ Public Class OrderInvoiceGenerator
             End Using
         End Using
     End Function
+
+    Private Function GenerateFromWordTemplate(order As OrderReceiptData, templatePath As String, billToBlock As String, remarks As String) As ReportDocument
+        Dim tempRoot = Path.Combine(Path.GetTempPath(), "LocalPOSInvoices")
+        Directory.CreateDirectory(tempRoot)
+
+        Dim stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)
+        Dim safeOrder = If(String.IsNullOrWhiteSpace(order.OrderNumber), "order", order.OrderNumber)
+        For Each c In Path.GetInvalidFileNameChars()
+            safeOrder = safeOrder.Replace(c, "_"c)
+        Next
+
+        Dim workingDocx = Path.Combine(tempRoot, $"invoice_{safeOrder}_{stamp}.docx")
+        Dim workingPdf = Path.Combine(tempRoot, $"invoice_{safeOrder}_{stamp}.pdf")
+
+        Try
+            File.Copy(templatePath, workingDocx, True)
+
+            Dim replacements = BuildWordReplacements(order, billToBlock, remarks)
+            TryPopulateWordTemplateInPlace(workingDocx, replacements)
+
+            Dim converted = TryConvertDocxToPdf(workingDocx, tempRoot, workingPdf)
+            If Not converted OrElse Not File.Exists(workingPdf) Then
+                Dim fallback = GenerateFallbackPdf(order, billToBlock, remarks)
+                Return New ReportDocument() With {
+                    .FileName = $"Invoice_{order.OrderNumber}_{stamp}.pdf",
+                    .ContentType = "application/pdf",
+                    .Content = fallback
+                }
+            End If
+
+            Return New ReportDocument() With {
+                .FileName = $"Invoice_{order.OrderNumber}_{stamp}.pdf",
+                .ContentType = "application/pdf",
+                .Content = File.ReadAllBytes(workingPdf)
+            }
+        Finally
+            Try
+                If File.Exists(workingDocx) Then File.Delete(workingDocx)
+            Catch
+            End Try
+            Try
+                If File.Exists(workingPdf) Then File.Delete(workingPdf)
+            Catch
+            End Try
+        End Try
+    End Function
+
+    Private Shared Function BuildWordReplacements(order As OrderReceiptData, billToBlock As String, remarks As String) As IDictionary(Of String, String)
+        Dim map As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+
+        Dim orderNumber = If(String.IsNullOrWhiteSpace(order.OrderNumber), String.Empty, order.OrderNumber)
+        Dim customerName = If(String.IsNullOrWhiteSpace(order.CustomerName), String.Empty, order.CustomerName)
+        Dim billTo = If(String.IsNullOrWhiteSpace(billToBlock), customerName, billToBlock)
+        Dim invoiceDate = order.OrderDate.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture)
+
+        map("InvoiceNumber") = orderNumber
+        map("InvoiceNo") = orderNumber
+        map("Invoice_No") = orderNumber
+        map("INVOICE_NO") = orderNumber
+        map("OrderNo") = orderNumber
+        map("Order_No") = orderNumber
+        map("Date") = invoiceDate
+        map("InvoiceDate") = invoiceDate
+        map("CustomerName") = customerName
+        map("Customer") = customerName
+        map("BillTo") = billTo
+        map("Bill_To") = billTo
+        map("PaymentMethod") = If(String.IsNullOrWhiteSpace(order.PaymentMethod), String.Empty, order.PaymentMethod)
+        map("Cashier") = If(String.IsNullOrWhiteSpace(order.CashierName), String.Empty, order.CashierName)
+
+        map("Subtotal") = order.Subtotal.ToString("F2", CultureInfo.InvariantCulture)
+        map("DiscountAmount") = order.DiscountAmount.ToString("F2", CultureInfo.InvariantCulture)
+        map("DiscountPercent") = order.DiscountPercent.ToString("F2", CultureInfo.InvariantCulture)
+        map("VatPercent") = order.TaxPercent.ToString("F2", CultureInfo.InvariantCulture)
+        map("VatAmount") = order.TaxAmount.ToString("F2", CultureInfo.InvariantCulture)
+        map("TotalAmount") = order.TotalAmount.ToString("F2", CultureInfo.InvariantCulture)
+        map("PaidAmount") = order.PaidAmount.ToString("F2", CultureInfo.InvariantCulture)
+        map("Balance") = order.OutstandingAmount.ToString("F2", CultureInfo.InvariantCulture)
+        map("OutstandingAmount") = order.OutstandingAmount.ToString("F2", CultureInfo.InvariantCulture)
+
+        map("Remarks") = If(String.IsNullOrWhiteSpace(remarks), String.Empty, remarks)
+
+        Return map
+    End Function
+
+    Private Shared Sub TryPopulateWordTemplateInPlace(docxPath As String, replacements As IDictionary(Of String, String))
+        If String.IsNullOrWhiteSpace(docxPath) OrElse replacements Is Nothing OrElse replacements.Count = 0 Then
+            Return
+        End If
+
+        Try
+            Using doc = WordprocessingDocument.Open(docxPath, True)
+                If doc.MainDocumentPart Is Nothing OrElse doc.MainDocumentPart.Document Is Nothing Then
+                    Return
+                End If
+
+                Dim texts = doc.MainDocumentPart.Document.Descendants(Of Text)()
+                For Each t In texts
+                    If t Is Nothing OrElse String.IsNullOrEmpty(t.Text) Then
+                        Continue For
+                    End If
+
+                    Dim value = t.Text
+                    For Each kvp In replacements
+                        Dim key = kvp.Key
+                        Dim repl = If(kvp.Value, String.Empty)
+
+                        value = value.Replace($"{{{{{key}}}}}", repl)
+                        value = value.Replace($"<<{key}>>", repl)
+                        value = value.Replace($"[[{key}]]", repl)
+                        value = value.Replace($"${{{key}}}", repl)
+                    Next
+
+                    t.Text = value
+                Next
+
+                doc.MainDocumentPart.Document.Save()
+            End Using
+        Catch
+            ' Template population is best-effort. Never crash invoice print.
+        End Try
+    End Sub
+
+    Private Shared Function TryConvertDocxToPdf(docxPath As String, outDir As String, expectedPdfPath As String) As Boolean
+        If String.IsNullOrWhiteSpace(docxPath) OrElse Not File.Exists(docxPath) Then
+            Return False
+        End If
+        If String.IsNullOrWhiteSpace(outDir) Then
+            outDir = Path.GetDirectoryName(docxPath)
+        End If
+        If String.IsNullOrWhiteSpace(outDir) OrElse Not Directory.Exists(outDir) Then
+            Return False
+        End If
+
+        Dim candidates = New String() {"soffice", "libreoffice", "soffice.exe", "libreoffice.exe"}
+        For Each exe In candidates
+            Try
+                Dim psi As New ProcessStartInfo() With {
+                    .FileName = exe,
+                    .Arguments = $"--headless --nologo --nolockcheck --nodefault --nofirststartwizard --convert-to pdf --outdir ""{outDir}"" ""{docxPath}""",
+                    .CreateNoWindow = True,
+                    .UseShellExecute = False,
+                    .RedirectStandardOutput = True,
+                    .RedirectStandardError = True
+                }
+
+                Using p = Process.Start(psi)
+                    If p Is Nothing Then
+                        Continue For
+                    End If
+                    p.WaitForExit(60000)
+                End Using
+
+                If File.Exists(expectedPdfPath) Then
+                    Return True
+                End If
+
+                ' LibreOffice sometimes uses the input filename for output; fallback to that.
+                Dim guessed = Path.Combine(outDir, Path.GetFileNameWithoutExtension(docxPath) & ".pdf")
+                If File.Exists(guessed) Then
+                    Try
+                        File.Copy(guessed, expectedPdfPath, True)
+                    Catch
+                    End Try
+                    Return File.Exists(expectedPdfPath)
+                End If
+            Catch
+                ' Try next candidate.
+            End Try
+        Next
+
+        Return False
+    End Function
+
+    Private Shared Function GenerateFallbackPdf(order As OrderReceiptData, billToBlock As String, remarks As String) As Byte()
+        Dim defaultMargin As Single = 36.0F
+        Using stream As New MemoryStream()
+            Using doc As New Document(PageSize.A4, defaultMargin, defaultMargin, defaultMargin, defaultMargin)
+                PdfWriter.GetInstance(doc, stream)
+                doc.Open()
+
+                Dim titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16.0F, BaseColor.BLACK)
+                doc.Add(New Paragraph("Invoice", titleFont))
+                doc.Add(New Paragraph($"Order: {If(String.IsNullOrWhiteSpace(order.OrderNumber), "-", order.OrderNumber)}"))
+                doc.Add(New Paragraph($"Date: {order.OrderDate.ToString("f", CultureInfo.CurrentCulture)}"))
+                doc.Add(New Paragraph(" "))
+
+                Dim customer = If(String.IsNullOrWhiteSpace(billToBlock), If(String.IsNullOrWhiteSpace(order.CustomerName), "-", order.CustomerName), billToBlock)
+                doc.Add(New Paragraph("Bill To:", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11.0F, BaseColor.BLACK)))
+                doc.Add(New Paragraph(customer))
+                doc.Add(New Paragraph(" "))
+
+                Dim items = If(order.LineItems, New List(Of OrderLineItem)())
+                Dim table = New PdfPTable(4)
+                table.WidthPercentage = 100
+                table.SetWidths(New Single() {50.0F, 15.0F, 15.0F, 20.0F})
+
+                AddFallbackHeaderCell(table, "Item")
+                AddFallbackHeaderCell(table, "Qty")
+                AddFallbackHeaderCell(table, "Unit")
+                AddFallbackHeaderCell(table, "Total")
+
+                For Each it In items
+                    AddFallbackBodyCell(table, If(String.IsNullOrWhiteSpace(it.Name), "Item", it.Name))
+                    AddFallbackBodyCell(table, it.Quantity.ToString(CultureInfo.InvariantCulture))
+                    AddFallbackBodyCell(table, Decimal.Round(it.UnitPrice, 2, MidpointRounding.AwayFromZero).ToString("F2", CultureInfo.InvariantCulture))
+                    AddFallbackBodyCell(table, Decimal.Round(it.LineTotal, 2, MidpointRounding.AwayFromZero).ToString("F2", CultureInfo.InvariantCulture))
+                Next
+
+                doc.Add(table)
+                doc.Add(New Paragraph(" "))
+
+                Dim totals = New PdfPTable(2)
+                totals.WidthPercentage = 40
+                totals.HorizontalAlignment = Element.ALIGN_RIGHT
+                totals.SetWidths(New Single() {60.0F, 40.0F})
+                AddFallbackTotalRow(totals, "Subtotal", order.Subtotal)
+                AddFallbackTotalRow(totals, $"Discount ({order.DiscountPercent.ToString("F2", CultureInfo.InvariantCulture)}%)", order.DiscountAmount)
+                AddFallbackTotalRow(totals, $"VAT ({order.TaxPercent.ToString("F2", CultureInfo.InvariantCulture)}%)", order.TaxAmount)
+                AddFallbackTotalRow(totals, "Total", order.TotalAmount)
+                AddFallbackTotalRow(totals, "Paid", order.PaidAmount)
+                AddFallbackTotalRow(totals, "Amount Due", order.OutstandingAmount)
+                doc.Add(totals)
+
+                If Not String.IsNullOrWhiteSpace(remarks) Then
+                    doc.Add(New Paragraph(" "))
+                    doc.Add(New Paragraph($"Remarks: {remarks}"))
+                End If
+            End Using
+            Return stream.ToArray()
+        End Using
+    End Function
+
+    Private Shared Sub AddFallbackHeaderCell(table As PdfPTable, text As String)
+        Dim font = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10.0F, BaseColor.WHITE)
+        Dim cell = New PdfPCell(New Phrase(text, font)) With {
+            .BackgroundColor = New BaseColor(33, 37, 41),
+            .Padding = 6.0F
+        }
+        table.AddCell(cell)
+    End Sub
+
+    Private Shared Sub AddFallbackBodyCell(table As PdfPTable, text As String)
+        Dim font = FontFactory.GetFont(FontFactory.HELVETICA, 9.0F, BaseColor.BLACK)
+        Dim cell = New PdfPCell(New Phrase(If(text, String.Empty), font)) With {
+            .Padding = 6.0F,
+            .BorderWidthBottom = 0.5F
+        }
+        table.AddCell(cell)
+    End Sub
+
+    Private Shared Sub AddFallbackTotalRow(table As PdfPTable, label As String, amount As Decimal)
+        Dim labelFont = FontFactory.GetFont(FontFactory.HELVETICA, 9.0F, BaseColor.BLACK)
+        Dim valueFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 9.0F, BaseColor.BLACK)
+        table.AddCell(New PdfPCell(New Phrase(label, labelFont)) With {.Border = Rectangle.NO_BORDER, .Padding = 3.0F})
+        table.AddCell(New PdfPCell(New Phrase(Decimal.Round(Math.Max(0D, amount), 2, MidpointRounding.AwayFromZero).ToString("F2", CultureInfo.InvariantCulture), valueFont)) With {.Border = Rectangle.NO_BORDER, .Padding = 3.0F, .HorizontalAlignment = Element.ALIGN_RIGHT})
+    End Sub
 
     Private Shared Sub PopulateHeader(worksheet As IXLWorksheet, order As OrderReceiptData, billToBlock As String)
         Dim dateCell = worksheet.Cell(DateCellAddress)

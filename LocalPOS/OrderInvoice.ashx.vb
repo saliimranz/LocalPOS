@@ -30,7 +30,7 @@ Public Class OrderInvoiceHandler
                 Return
             End If
 
-            Dim templatePath = context.Server.MapPath("~/Templates/SalesTaxInvoice.xlsx")
+            Dim templatePath = context.Server.MapPath("~/Templates/Invoice_Template.docx")
             Dim dealer = ResolveDealer(order)
             Dim billTo = BuildBillToBlock(order, dealer)
             Dim remarks = BuildRemarks(order)

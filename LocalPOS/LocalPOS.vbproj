@@ -233,6 +233,7 @@
     <Content Include="Bundle.config" />
     <Content Include="recipts\.gitkeep" />
     <Content Include="Templates\Customer_Ledger.xlsx" />
+    <Content Include="Templates\Invoice_Template.docx" />
     <Content Include="Templates\Receivables.xlsx" />
     <Content Include="Templates\Sales.xlsx" />
     <Content Include="Templates\SalesTaxInvoice.xlsx" />
