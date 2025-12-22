@@ -5,7 +5,6 @@ Imports System.Diagnostics
 Imports System.IO
 Imports ClosedXML.Excel
 Imports DocumentFormat.OpenXml.Packaging
-Imports DocumentFormat.OpenXml.Wordprocessing
 Imports iTextSharp.text
 Imports iTextSharp.text.pdf
 Imports LocalPOS.LocalPOS.Models
@@ -160,7 +159,7 @@ Public Class OrderInvoiceGenerator
                     Return
                 End If
 
-                Dim texts = doc.MainDocumentPart.Document.Descendants(Of Text)()
+                Dim texts = doc.MainDocumentPart.Document.Descendants(Of DocumentFormat.OpenXml.Wordprocessing.Text)()
                 For Each t In texts
                     If t Is Nothing OrElse String.IsNullOrEmpty(t.Text) Then
                         Continue For
@@ -241,20 +240,20 @@ Public Class OrderInvoiceGenerator
     Private Shared Function GenerateFallbackPdf(order As OrderReceiptData, billToBlock As String, remarks As String) As Byte()
         Dim defaultMargin As Single = 36.0F
         Using stream As New MemoryStream()
-            Using doc As New Document(PageSize.A4, defaultMargin, defaultMargin, defaultMargin, defaultMargin)
+            Using doc As New iTextSharp.text.Document(iTextSharp.text.PageSize.A4, defaultMargin, defaultMargin, defaultMargin, defaultMargin)
                 PdfWriter.GetInstance(doc, stream)
                 doc.Open()
 
                 Dim titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16.0F, BaseColor.BLACK)
-                doc.Add(New Paragraph("Invoice", titleFont))
-                doc.Add(New Paragraph($"Order: {If(String.IsNullOrWhiteSpace(order.OrderNumber), "-", order.OrderNumber)}"))
-                doc.Add(New Paragraph($"Date: {order.OrderDate.ToString("f", CultureInfo.CurrentCulture)}"))
-                doc.Add(New Paragraph(" "))
+                doc.Add(New iTextSharp.text.Paragraph("Invoice", titleFont))
+                doc.Add(New iTextSharp.text.Paragraph($"Order: {If(String.IsNullOrWhiteSpace(order.OrderNumber), "-", order.OrderNumber)}"))
+                doc.Add(New iTextSharp.text.Paragraph($"Date: {order.OrderDate.ToString("f", CultureInfo.CurrentCulture)}"))
+                doc.Add(New iTextSharp.text.Paragraph(" "))
 
                 Dim customer = If(String.IsNullOrWhiteSpace(billToBlock), If(String.IsNullOrWhiteSpace(order.CustomerName), "-", order.CustomerName), billToBlock)
-                doc.Add(New Paragraph("Bill To:", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11.0F, BaseColor.BLACK)))
-                doc.Add(New Paragraph(customer))
-                doc.Add(New Paragraph(" "))
+                doc.Add(New iTextSharp.text.Paragraph("Bill To:", FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 11.0F, BaseColor.BLACK)))
+                doc.Add(New iTextSharp.text.Paragraph(customer))
+                doc.Add(New iTextSharp.text.Paragraph(" "))
 
                 Dim items = If(order.LineItems, New List(Of OrderLineItem)())
                 Dim table = New PdfPTable(4)
@@ -274,7 +273,7 @@ Public Class OrderInvoiceGenerator
                 Next
 
                 doc.Add(table)
-                doc.Add(New Paragraph(" "))
+                doc.Add(New iTextSharp.text.Paragraph(" "))
 
                 Dim totals = New PdfPTable(2)
                 totals.WidthPercentage = 40
@@ -289,8 +288,8 @@ Public Class OrderInvoiceGenerator
                 doc.Add(totals)
 
                 If Not String.IsNullOrWhiteSpace(remarks) Then
-                    doc.Add(New Paragraph(" "))
-                    doc.Add(New Paragraph($"Remarks: {remarks}"))
+                    doc.Add(New iTextSharp.text.Paragraph(" "))
+                    doc.Add(New iTextSharp.text.Paragraph($"Remarks: {remarks}"))
                 End If
             End Using
             Return stream.ToArray()
