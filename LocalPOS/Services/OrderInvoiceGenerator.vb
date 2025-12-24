@@ -34,6 +34,7 @@ Public Class OrderInvoiceGenerator
     Private Const VatPercentColumn As Integer = 10 ' J
     Private Const VatValueColumn As Integer = 11 ' K
     Private Const NetAmountColumn As Integer = 12 ' L
+    Private Const SummaryLabelColumn As Integer = 10 ' J (template summary labels live in column J)
 
     Private Const InvoiceNumberCellAddress As String = "G6"
     Private Const CustomerNameCellAddress As String = "B8"
@@ -216,6 +217,7 @@ Public Class OrderInvoiceGenerator
         Dim paidAmount = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.PaidAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim dueAmount = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.OutstandingAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim vatPercent = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.TaxPercent, 0D)), 2, MidpointRounding.AwayFromZero)
+        Dim effectiveDiscountPercent = DetermineEffectiveDiscountPercent(order, subtotalGross, totalDiscount)
 
         ' Totals row (row 21 in template).
         Dim sumAmount = subtotalGross
@@ -243,12 +245,16 @@ Public Class OrderInvoiceGenerator
         ' Summary block (values in column L).
         worksheet.Cell(subtotalRow, NetAmountColumn).Value = subtotalGross
         worksheet.Cell(subtotalAfterItemRow, NetAmountColumn).Value = subtotalAfterItem
-        worksheet.Cell(subtotalDiscountRow, NetAmountColumn).Value = subtotalDiscount
+        worksheet.Cell(subtotalDiscountRow, NetAmountColumn).Value = totalDiscount
         worksheet.Cell(totalBeforeVatRow, NetAmountColumn).Value = totalBeforeVat
         worksheet.Cell(VatRowIndex + extraRowOffset, NetAmountColumn).Value = vatAmount
         worksheet.Cell(totalIncVatRow, NetAmountColumn).Value = totalIncVat
         worksheet.Cell(totalPaidRow, NetAmountColumn).Value = paidAmount
         worksheet.Cell(amountDueRow, NetAmountColumn).Value = dueAmount
+
+        ' Dynamic label updates in the summary section (template defaults: "Discount", "VAT(5%)").
+        worksheet.Cell(subtotalDiscountRow, SummaryLabelColumn).Value = $"Discount({FormatPercent(effectiveDiscountPercent)}%)"
+        worksheet.Cell(VatRowIndex + extraRowOffset, SummaryLabelColumn).Value = $"VAT({FormatPercent(vatPercent)}%)"
 
         ' Amount in words (merged C25:H26 in the template).
         Dim words = ToAedWords(totalIncVat)
@@ -265,6 +271,28 @@ Public Class OrderInvoiceGenerator
         remarksCell.Value = remarksValue
         remarksCell.Style.Alignment.WrapText = True
     End Sub
+
+    Private Shared Function DetermineEffectiveDiscountPercent(order As OrderReceiptData, subtotalGross As Decimal, totalDiscount As Decimal) As Decimal
+        Dim candidate = 0D
+        If order IsNot Nothing Then
+            candidate = Decimal.Round(Math.Max(0D, order.DiscountPercent), 2, MidpointRounding.AwayFromZero)
+        End If
+
+        If candidate > 0D Then
+            Return candidate
+        End If
+
+        If subtotalGross <= 0D OrElse totalDiscount <= 0D Then
+            Return 0D
+        End If
+
+        Return Decimal.Round((totalDiscount / subtotalGross) * 100D, 2, MidpointRounding.AwayFromZero)
+    End Function
+
+    Private Shared Function FormatPercent(value As Decimal) As String
+        Dim safe = Decimal.Round(Math.Max(0D, value), 2, MidpointRounding.AwayFromZero)
+        Return safe.ToString("0.##", CultureInfo.InvariantCulture)
+    End Function
 
     Private Shared Sub ExtractCustomerBlocks(billToBlock As String, fallbackCustomerName As String, ByRef customerName As String, ByRef address As String, ByRef phone As String)
         Dim safeFallbackName = If(String.IsNullOrWhiteSpace(fallbackCustomerName), "Walk-in Customer", fallbackCustomerName)
