@@ -11,7 +11,6 @@ Public Class OrderInvoiceHandler
 
     Private ReadOnly _posService As New PosService()
     Private ReadOnly _invoiceGenerator As New OrderInvoiceGenerator()
-    Private ReadOnly _invoicePdfGenerator As New OrderInvoicePdfGenerator()
 
     Public Sub ProcessRequest(context As HttpContext) Implements IHttpHandler.ProcessRequest
         If context Is Nothing Then
@@ -46,12 +45,24 @@ Public Class OrderInvoiceHandler
 
     Private Function ResolveDocument(context As HttpContext, order As OrderReceiptData, templatePath As String, billTo As String, remarks As String) As ReportDocument
         Dim format = If(context IsNot Nothing, context.Request("format"), Nothing)
-        If Not String.IsNullOrWhiteSpace(format) AndAlso format.Trim().Equals("xlsx", StringComparison.OrdinalIgnoreCase) Then
-            Return _invoiceGenerator.Generate(order, templatePath, billTo, remarks)
+        Dim wantsXlsx = Not String.IsNullOrWhiteSpace(format) AndAlso format.Trim().Equals("xlsx", StringComparison.OrdinalIgnoreCase)
+
+        ' Always generate from the Excel template first so layout/logos/tables remain intact.
+        Dim xlsx = _invoiceGenerator.Generate(order, templatePath, billTo, remarks)
+        If wantsXlsx Then
+            Return xlsx
         End If
 
-        ' Default: PDF invoice.
-        Return _invoicePdfGenerator.Generate(order, billTo, remarks)
+        ' Default: convert the generated XLSX to PDF (equivalent to the "Export as PDF" button).
+        Dim pdfBytes = XlsxToPdfConverter.Convert(xlsx.Content)
+        Dim invoiceNo = If(String.IsNullOrWhiteSpace(order.ReceiptNumber), order.OrderNumber, order.ReceiptNumber)
+        Dim pdf As New ReportDocument() With {
+            .FileName = $"Invoice_{invoiceNo}_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf",
+            .ContentType = "application/pdf",
+            .Content = pdfBytes
+        }
+        pdf.EnsureValid()
+        Return pdf
     End Function
 
     Private Function ResolveDealer(order As OrderReceiptData) As Dealer
