@@ -236,6 +236,7 @@
     <Content Include="Templates\Receivables.xlsx" />
     <Content Include="Templates\Sales.xlsx" />
     <Content Include="Templates\SalesTaxInvoice.xlsx" />
+    <Content Include="Templates\INVOICE.xlsx" />
     <Content Include="ReceiptDownload.ashx" />
     <Content Include="OrderInvoice.ashx" />
     <Content Include="ReceivablesReport.ashx" />
