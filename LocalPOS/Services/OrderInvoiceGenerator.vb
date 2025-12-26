@@ -207,17 +207,16 @@ Public Class OrderInvoiceGenerator
         Dim subtotalGross = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.Subtotal, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim itemDiscount = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.ItemDiscountAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim subtotalDiscount = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.SubtotalDiscountAmount, 0D)), 2, MidpointRounding.AwayFromZero)
-        Dim totalDiscount = Decimal.Round(Math.Max(0D, itemDiscount + subtotalDiscount), 2, MidpointRounding.AwayFromZero)
-        If totalDiscount > subtotalGross Then totalDiscount = subtotalGross
+        If subtotalDiscount > subtotalGross Then subtotalDiscount = subtotalGross
 
         Dim subtotalAfterItem = Decimal.Round(Math.Max(0D, subtotalGross - itemDiscount), 2, MidpointRounding.AwayFromZero)
-        Dim totalBeforeVat = Decimal.Round(Math.Max(0D, subtotalGross - totalDiscount), 2, MidpointRounding.AwayFromZero)
+        Dim totalBeforeVat = Decimal.Round(Math.Max(0D, subtotalAfterItem - subtotalDiscount), 2, MidpointRounding.AwayFromZero)
         Dim vatAmount = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.TaxAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim totalIncVat = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.TotalAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim paidAmount = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.PaidAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim dueAmount = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.OutstandingAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim vatPercent = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.TaxPercent, 0D)), 2, MidpointRounding.AwayFromZero)
-        Dim effectiveDiscountPercent = DetermineEffectiveDiscountPercent(order, subtotalGross, totalDiscount)
+        Dim subtotalDiscountPercent = DetermineSubtotalDiscountPercent(subtotalAfterItem, subtotalDiscount)
 
         ' Totals row (row 21 in template).
         Dim sumAmount = subtotalGross
@@ -245,7 +244,7 @@ Public Class OrderInvoiceGenerator
         ' Summary block (values in column L).
         worksheet.Cell(subtotalRow, NetAmountColumn).Value = subtotalGross
         worksheet.Cell(subtotalAfterItemRow, NetAmountColumn).Value = subtotalAfterItem
-        worksheet.Cell(subtotalDiscountRow, NetAmountColumn).Value = totalDiscount
+        worksheet.Cell(subtotalDiscountRow, NetAmountColumn).Value = subtotalDiscount
         worksheet.Cell(totalBeforeVatRow, NetAmountColumn).Value = totalBeforeVat
         worksheet.Cell(VatRowIndex + extraRowOffset, NetAmountColumn).Value = vatAmount
         worksheet.Cell(totalIncVatRow, NetAmountColumn).Value = totalIncVat
@@ -253,7 +252,7 @@ Public Class OrderInvoiceGenerator
         worksheet.Cell(amountDueRow, NetAmountColumn).Value = dueAmount
 
         ' Dynamic label updates in the summary section (template defaults: "Discount", "VAT(5%)").
-        worksheet.Cell(subtotalDiscountRow, SummaryLabelColumn).Value = $"Discount({FormatPercent(effectiveDiscountPercent)}%)"
+        worksheet.Cell(subtotalDiscountRow, SummaryLabelColumn).Value = $"Discount({FormatPercent(subtotalDiscountPercent)}%)"
         worksheet.Cell(VatRowIndex + extraRowOffset, SummaryLabelColumn).Value = $"VAT({FormatPercent(vatPercent)}%)"
 
         ' Amount in words (merged C25:H26 in the template).
@@ -272,21 +271,12 @@ Public Class OrderInvoiceGenerator
         remarksCell.Style.Alignment.WrapText = True
     End Sub
 
-    Private Shared Function DetermineEffectiveDiscountPercent(order As OrderReceiptData, subtotalGross As Decimal, totalDiscount As Decimal) As Decimal
-        Dim candidate = 0D
-        If order IsNot Nothing Then
-            candidate = Decimal.Round(Math.Max(0D, order.DiscountPercent), 2, MidpointRounding.AwayFromZero)
-        End If
-
-        If candidate > 0D Then
-            Return candidate
-        End If
-
-        If subtotalGross <= 0D OrElse totalDiscount <= 0D Then
+    Private Shared Function DetermineSubtotalDiscountPercent(subtotalAfterItem As Decimal, subtotalDiscount As Decimal) As Decimal
+        If subtotalAfterItem <= 0D OrElse subtotalDiscount <= 0D Then
             Return 0D
         End If
 
-        Return Decimal.Round((totalDiscount / subtotalGross) * 100D, 2, MidpointRounding.AwayFromZero)
+        Return Decimal.Round((subtotalDiscount / subtotalAfterItem) * 100D, 2, MidpointRounding.AwayFromZero)
     End Function
 
     Private Shared Function FormatPercent(value As Decimal) As String

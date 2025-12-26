@@ -13,7 +13,6 @@ Imports LocalPOS.LocalPOS.Models
 ''' </summary>
 Public Class OrderInvoicePdfGenerator
     Private Const Margin As Single = 18.0F
-    Private Const DefaultLineRows As Integer = 6
 
     Public Function Generate(order As OrderReceiptData, billToBlock As String, remarks As String, logoPngPath As String) As ReportDocument
         If order Is Nothing Then Throw New ArgumentNullException(NameOf(order))
@@ -152,7 +151,7 @@ Public Class OrderInvoicePdfGenerator
         AddHeaderCell(table, "RATE", headerFont, headerBg, rowspan:=2)
         AddHeaderCell(table, "AMOUNT", headerFont, headerBg, rowspan:=2)
         AddHeaderCell(table, "ITEM DISCOUNT", headerFont, headerBg, colspan:=2)
-        AddHeaderCell(table, "AMOUNT (After\nDiscount)", headerFont, headerBg, rowspan:=2)
+        AddHeaderCell(table, "AMOUNT (After Discount)", headerFont, headerBg, rowspan:=2)
         AddHeaderCell(table, "VAT", headerFont, headerBg, colspan:=2)
         AddHeaderCell(table, "NET AMT", headerFont, headerBg, rowspan:=2)
 
@@ -163,10 +162,17 @@ Public Class OrderInvoicePdfGenerator
         AddHeaderCell(table, "VAL", subHeaderFont, headerBg)
 
         Dim safeItems = If(items, New List(Of OrderLineItem)())
-        Dim rows = Math.Max(safeItems.Count, DefaultLineRows)
-
-        For i = 0 To rows - 1
-            If i < safeItems.Count Then
+        If safeItems.Count = 0 Then
+            Dim msg = New PdfPCell(New Phrase("No line items available.", bodyFont)) With {
+                .Colspan = 12,
+                .HorizontalAlignment = Element.ALIGN_LEFT,
+                .PaddingTop = 6.0F,
+                .PaddingBottom = 6.0F,
+                .BorderWidth = 0.8F
+            }
+            table.AddCell(msg)
+        Else
+            For i = 0 To safeItems.Count - 1
                 Dim it = safeItems(i)
                 Dim gross = RoundMoney(Math.Max(0D, it.LineTotal))
                 Dim itemDisc = RoundMoney(Math.Max(0D, it.DiscountAmount))
@@ -188,14 +194,8 @@ Public Class OrderInvoicePdfGenerator
                 AddBodyCell(table, FormatPercent(vatPercent), bodyFont, Element.ALIGN_RIGHT)
                 AddBodyCell(table, FormatNumber(vatVal), bodyFont, Element.ALIGN_RIGHT)
                 AddBodyCell(table, FormatNumber(net), bodyFont, Element.ALIGN_RIGHT)
-            Else
-                ' Blank row but keep serial number like the template.
-                AddBodyCell(table, (i + 1).ToString(CultureInfo.InvariantCulture), bodyFont, Element.ALIGN_CENTER)
-                For c = 1 To 11
-                    AddBodyCell(table, String.Empty, bodyFont, Element.ALIGN_LEFT)
-                Next
-            End If
-        Next
+            Next
+        End If
 
         ' Totals row (mirrors template's totals line).
         Dim subtotalGross = RoundMoney(Math.Max(0D, order.Subtotal))
@@ -236,15 +236,14 @@ Public Class OrderInvoicePdfGenerator
         Dim subtotalGross = RoundMoney(Math.Max(0D, order.Subtotal))
         Dim itemDiscount = RoundMoney(Math.Max(0D, order.ItemDiscountAmount))
         Dim subtotalDiscount = RoundMoney(Math.Max(0D, order.SubtotalDiscountAmount))
-        Dim totalDiscount = RoundMoney(Math.Min(subtotalGross, Math.Max(0D, itemDiscount + subtotalDiscount)))
         Dim subtotalAfterItem = RoundMoney(Math.Max(0D, subtotalGross - itemDiscount))
-        Dim totalBeforeVat = RoundMoney(Math.Max(0D, subtotalGross - totalDiscount))
+        Dim totalBeforeVat = RoundMoney(Math.Max(0D, subtotalAfterItem - subtotalDiscount))
         Dim vatPercent = Decimal.Round(Math.Max(0D, order.TaxPercent), 2, MidpointRounding.AwayFromZero)
         Dim vatAmount = RoundMoney(Math.Max(0D, order.TaxAmount))
         Dim totalIncVat = RoundMoney(Math.Max(0D, order.TotalAmount))
         Dim paid = RoundMoney(Math.Max(0D, order.PaidAmount))
         Dim due = RoundMoney(Math.Max(0D, order.OutstandingAmount))
-        Dim discountPercent = DetermineEffectiveDiscountPercent(order, subtotalGross, totalDiscount)
+        Dim subtotalDiscountPercent = DetermineSubtotalDiscountPercent(subtotalAfterItem, subtotalDiscount)
 
         ' Left block: Amount in words + remarks line.
         Dim left As New PdfPTable(2) With {.WidthPercentage = 100}
@@ -271,7 +270,7 @@ Public Class OrderInvoicePdfGenerator
 
         AddSummaryRow(right, "Sub Total", FormatNumber(subtotalGross), bold, bold)
         AddSummaryRow(right, "Sub Total(After Item Discount)", FormatNumber(subtotalAfterItem), bold, bold)
-        AddSummaryRow(right, $"Discount({FormatPercent(discountPercent)}%)", FormatNumber(totalDiscount), bold, bold)
+        AddSummaryRow(right, $"Discount({FormatPercent(subtotalDiscountPercent)}%)", FormatNumber(subtotalDiscount), bold, bold)
         AddSummaryRow(right, "Total Before VAT", FormatNumber(totalBeforeVat), bold, bold)
         AddSummaryRow(right, $"VAT({FormatPercent(vatPercent)}%)", FormatNumber(vatAmount), bold, bold)
         AddSummaryRow(right, "Total inc VAT", FormatNumber(totalIncVat), bold, bold)
@@ -425,18 +424,11 @@ Public Class OrderInvoicePdfGenerator
         address = String.Join(" ", addressParts)
     End Sub
 
-    Private Shared Function DetermineEffectiveDiscountPercent(order As OrderReceiptData, subtotalGross As Decimal, totalDiscount As Decimal) As Decimal
-        Dim candidate = 0D
-        If order IsNot Nothing Then
-            candidate = Decimal.Round(Math.Max(0D, order.DiscountPercent), 2, MidpointRounding.AwayFromZero)
-        End If
-        If candidate > 0D Then
-            Return candidate
-        End If
-        If subtotalGross <= 0D OrElse totalDiscount <= 0D Then
+    Private Shared Function DetermineSubtotalDiscountPercent(subtotalAfterItem As Decimal, subtotalDiscount As Decimal) As Decimal
+        If subtotalAfterItem <= 0D OrElse subtotalDiscount <= 0D Then
             Return 0D
         End If
-        Return Decimal.Round((totalDiscount / subtotalGross) * 100D, 2, MidpointRounding.AwayFromZero)
+        Return Decimal.Round((subtotalDiscount / subtotalAfterItem) * 100D, 2, MidpointRounding.AwayFromZero)
     End Function
 
     Private Shared Function RoundMoney(amount As Decimal) As Decimal
