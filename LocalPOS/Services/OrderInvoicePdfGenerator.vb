@@ -181,7 +181,6 @@ Public Class OrderInvoicePdfGenerator
                 Dim itemDiscPercent = If(gross > 0D AndAlso itemDisc > 0D, Decimal.Round((itemDisc / gross) * 100D, 2, MidpointRounding.AwayFromZero), 0D)
                 Dim afterItemDisc = RoundMoney(Math.Max(0D, gross - itemDisc))
                 Dim taxableBase = computedAfterDiscount(i)
-                Dim vatPercent = Decimal.Round(Math.Max(0D, it.TaxRate), 2, MidpointRounding.AwayFromZero)
                 Dim vatVal = RoundMoney(Math.Max(0D, it.TaxAmount))
                 Dim net = RoundMoney(Math.Max(0D, taxableBase + vatVal))
 
@@ -194,7 +193,7 @@ Public Class OrderInvoicePdfGenerator
                 AddBodyCell(table, FormatPercent(itemDiscPercent), bodyFont, Element.ALIGN_RIGHT)
                 AddBodyCell(table, FormatNumber(itemDisc), bodyFont, Element.ALIGN_RIGHT)
                 AddBodyCell(table, FormatNumber(afterItemDisc), bodyFont, Element.ALIGN_RIGHT)
-                AddBodyCell(table, FormatPercent(vatPercent), bodyFont, Element.ALIGN_RIGHT)
+                AddBodyCell(table, FormatPercent(Decimal.Round(Math.Max(0D, it.TaxRate), 2, MidpointRounding.AwayFromZero)), bodyFont, Element.ALIGN_RIGHT)
                 AddBodyCell(table, FormatNumber(vatVal), bodyFont, Element.ALIGN_RIGHT)
                 AddBodyCell(table, FormatNumber(net), bodyFont, Element.ALIGN_RIGHT)
             Next
