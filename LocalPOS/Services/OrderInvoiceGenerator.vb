@@ -45,6 +45,7 @@ Public Class OrderInvoiceGenerator
     Private Const DateCellAddress As String = "K9"
     ' NOTE: Amount-in-words and remarks cells move down when extra rows are inserted.
     Private Const DateFormat As String = "dd-MMM-yyyy"
+    Private Const HeaderRowIndex As Integer = 13
 
     Public Function Generate(order As OrderReceiptData, templatePath As String, billToBlock As String, remarks As String) As ReportDocument
         If order Is Nothing Then
@@ -59,6 +60,8 @@ Public Class OrderInvoiceGenerator
 
         Using workbook = New XLWorkbook(templatePath)
             Dim worksheet = workbook.Worksheet(1)
+            ' Keep header text consistent with our PDF invoice.
+            worksheet.Cell(HeaderRowIndex, AmountAfterDiscountColumn).Value = "AMOUNT (After Item Discount)"
             PopulateHeader(worksheet, order, billToBlock)
             Dim extraRows = PopulateLineItems(worksheet, order)
             PopulateTotalsAndSummary(worksheet, order, remarks, extraRows)

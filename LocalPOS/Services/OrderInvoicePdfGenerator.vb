@@ -86,14 +86,16 @@ Public Class OrderInvoicePdfGenerator
 
         doc.Add(table)
 
-        ' Center title bar.
+        ' Center title bar (match the header fill color used in the items table).
         Dim titleTable As New PdfPTable(1) With {.WidthPercentage = 100}
         Dim titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 10.5F, BaseColor.BLACK)
+        Dim titleBg As New BaseColor(230, 230, 230)
         titleTable.AddCell(New PdfPCell(New Phrase("Sales Tax Invoice", titleFont)) With {
             .HorizontalAlignment = Element.ALIGN_CENTER,
             .PaddingTop = 4.0F,
             .PaddingBottom = 4.0F,
-            .BorderWidth = 0.8F
+            .BorderWidth = 0.8F,
+            .BackgroundColor = titleBg
         })
         titleTable.SpacingBefore = 2.0F
         titleTable.SpacingAfter = 4.0F
@@ -151,7 +153,7 @@ Public Class OrderInvoicePdfGenerator
         AddHeaderCell(table, "RATE", headerFont, headerBg, rowspan:=2)
         AddHeaderCell(table, "AMOUNT", headerFont, headerBg, rowspan:=2)
         AddHeaderCell(table, "ITEM DISCOUNT", headerFont, headerBg, colspan:=2)
-        AddHeaderCell(table, "AMOUNT (After Discount)", headerFont, headerBg, rowspan:=2)
+        AddHeaderCell(table, "AMOUNT (After Item Discount)", headerFont, headerBg, rowspan:=2)
         AddHeaderCell(table, "VAT", headerFont, headerBg, colspan:=2)
         AddHeaderCell(table, "NET AMT", headerFont, headerBg, rowspan:=2)
 
