@@ -133,7 +133,7 @@ Public Class OrderInvoiceGenerator
         ' fall back to proportionally distributing the order-level subtotal discount across lines.
         EnsureSubtotalDiscountAllocations(lineItems, Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.SubtotalDiscountAmount, 0D)), 2, MidpointRounding.AwayFromZero))
 
-        ' Compute a reconciled per-line base-after-discount so totals match the order summary.
+        ' Compute a reconciled per-line base-after-all-discounts so net totals match the order summary.
         Dim subtotalGross = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.Subtotal, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim itemDiscountTotal = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.ItemDiscountAmount, 0D)), 2, MidpointRounding.AwayFromZero)
         Dim subtotalDiscountTotal = Decimal.Round(Math.Max(0D, If(order IsNot Nothing, order.SubtotalDiscountAmount, 0D)), 2, MidpointRounding.AwayFromZero)
@@ -165,10 +165,13 @@ Public Class OrderInvoiceGenerator
             If gross > 0D AndAlso itemDisc > 0D Then
                 itemDiscPercent = Decimal.Round((itemDisc / gross) * 100D, 2, MidpointRounding.AwayFromZero)
             End If
-            Dim afterDisc = computedAfterDiscount(i)
+            ' Column "AMOUNT (After Item Discount)" must show ONLY item-level discount impact.
+            Dim afterItemDisc = Decimal.Round(Math.Max(0D, gross - itemDisc), 2, MidpointRounding.AwayFromZero)
+            ' Net amount still reflects taxable base after all discounts + VAT (uses reconciled base).
+            Dim taxableBase = computedAfterDiscount(i)
             Dim vatPercent = Decimal.Round(Math.Max(0D, item.TaxRate), 2, MidpointRounding.AwayFromZero)
             Dim vatValue = Decimal.Round(Math.Max(0D, item.TaxAmount), 2, MidpointRounding.AwayFromZero)
-            Dim net = Decimal.Round(Math.Max(0D, afterDisc + vatValue), 2, MidpointRounding.AwayFromZero)
+            Dim net = Decimal.Round(Math.Max(0D, taxableBase + vatValue), 2, MidpointRounding.AwayFromZero)
 
             worksheet.Cell(currentRow, SnoColumn).Value = (i + 1)
             worksheet.Cell(currentRow, PartNoColumn).Value = If(item.ProductId > 0, item.ProductId.ToString(CultureInfo.InvariantCulture), String.Empty)
@@ -178,7 +181,7 @@ Public Class OrderInvoiceGenerator
             worksheet.Cell(currentRow, AmountColumn).Value = gross
             worksheet.Cell(currentRow, ItemDiscountPercentColumn).Value = itemDiscPercent
             worksheet.Cell(currentRow, ItemDiscountValueColumn).Value = itemDisc
-            worksheet.Cell(currentRow, AmountAfterDiscountColumn).Value = afterDisc
+            worksheet.Cell(currentRow, AmountAfterDiscountColumn).Value = afterItemDisc
             worksheet.Cell(currentRow, VatPercentColumn).Value = vatPercent
             worksheet.Cell(currentRow, VatValueColumn).Value = vatValue
             worksheet.Cell(currentRow, NetAmountColumn).Value = net
@@ -239,7 +242,7 @@ Public Class OrderInvoiceGenerator
         worksheet.Cell(totalsRow, AmountColumn).Value = sumAmount
         worksheet.Cell(totalsRow, ItemDiscountPercentColumn).Value = avgItemDiscountPercent
         worksheet.Cell(totalsRow, ItemDiscountValueColumn).Value = sumItemDiscount
-        worksheet.Cell(totalsRow, AmountAfterDiscountColumn).Value = totalBeforeVat
+        worksheet.Cell(totalsRow, AmountAfterDiscountColumn).Value = subtotalAfterItem
         worksheet.Cell(totalsRow, VatPercentColumn).Value = avgVatPercent
         worksheet.Cell(totalsRow, VatValueColumn).Value = sumVat
         worksheet.Cell(totalsRow, NetAmountColumn).Value = totalIncVat
