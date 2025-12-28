@@ -11,6 +11,7 @@ Public Class OrderInvoiceHandler
 
     Private ReadOnly _posService As New PosService()
     Private ReadOnly _invoiceGenerator As New OrderInvoiceGenerator()
+    Private ReadOnly _invoicePdfGenerator As New OrderInvoicePdfGenerator()
 
     Public Sub ProcessRequest(context As HttpContext) Implements IHttpHandler.ProcessRequest
         If context Is Nothing Then
@@ -34,7 +35,7 @@ Public Class OrderInvoiceHandler
             Dim dealer = ResolveDealer(order)
             Dim billTo = BuildBillToBlock(order, dealer)
             Dim remarks = BuildRemarks(order)
-            Dim document = _invoiceGenerator.Generate(order, templatePath, billTo, remarks)
+            Dim document = ResolveDocument(context, order, templatePath, billTo, remarks)
             WriteDocument(context, document)
         Catch ex As FileNotFoundException
             WriteError(context, 500, ex.Message)
@@ -42,6 +43,18 @@ Public Class OrderInvoiceHandler
             WriteError(context, 500, $"Unable to generate invoice. {ex.Message}")
         End Try
     End Sub
+
+    Private Function ResolveDocument(context As HttpContext, order As OrderReceiptData, templatePath As String, billTo As String, remarks As String) As ReportDocument
+        Dim format = If(context IsNot Nothing, context.Request("format"), Nothing)
+        Dim wantsXlsx = Not String.IsNullOrWhiteSpace(format) AndAlso format.Trim().Equals("xlsx", StringComparison.OrdinalIgnoreCase)
+
+        If wantsXlsx Then
+            Return _invoiceGenerator.Generate(order, templatePath, billTo, remarks)
+        End If
+
+        Dim logoPath = context.Server.MapPath("~/Templates/invoice.png")
+        Return _invoicePdfGenerator.Generate(order, billTo, remarks, logoPath)
+    End Function
 
     Private Function ResolveDealer(order As OrderReceiptData) As Dealer
         If order Is Nothing OrElse order.DealerId <= 0 Then

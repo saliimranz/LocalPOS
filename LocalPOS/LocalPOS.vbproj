@@ -288,6 +288,8 @@
     <Compile Include="Services\PricingEngine.vb" />
     <Compile Include="Services\ReceiptGenerator.vb" />
     <Compile Include="Services\OrderInvoiceGenerator.vb" />
+    <Compile Include="Services\OrderInvoicePdfGenerator.vb" />
+    <Compile Include="Services\XlsxToPdfConverter.vb" />
     <Compile Include="Services\ReceivablesReportGenerator.vb" />
     <Compile Include="Services\SalesReportGenerator.vb" />
     <Compile Include="About.aspx.designer.vb">
