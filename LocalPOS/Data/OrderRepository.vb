@@ -465,6 +465,61 @@ VALUES
             End Using
         End Function
 
+        Private Shared Function HasDiscountRecordsForOrder(connection As SqlConnection, transaction As SqlTransaction, orderId As Integer) As Boolean
+            If connection Is Nothing OrElse orderId <= 0 Then
+                Return False
+            End If
+
+            Dim hasDiscountTable As Boolean
+            Dim hasAllocationTable As Boolean
+            Try
+                hasDiscountTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT")
+                hasAllocationTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT_ALLOCATION")
+            Catch
+                Return False
+            End Try
+
+            If Not hasDiscountTable AndAlso Not hasAllocationTable Then
+                Return False
+            End If
+
+            ' Prefer checking the intent table first (TBL_POS_DISCOUNT), then the allocation table.
+            If hasDiscountTable Then
+                Try
+                    Using command = connection.CreateCommand()
+                        command.Transaction = transaction
+                        command.CommandText = "SELECT TOP 1 1 FROM dbo.TBL_POS_DISCOUNT WHERE ORDER_ID = @OrderId"
+                        command.Parameters.AddWithValue("@OrderId", orderId)
+                        Dim raw = command.ExecuteScalar()
+                        If raw IsNot Nothing AndAlso raw IsNot DBNull.Value Then
+                            Return True
+                        End If
+                    End Using
+                Catch
+                    ' If the discount table exists but the schema is unexpected, fall back to legacy logic.
+                    Return False
+                End Try
+            End If
+
+            If hasAllocationTable Then
+                Try
+                    Using command = connection.CreateCommand()
+                        command.Transaction = transaction
+                        command.CommandText = "SELECT TOP 1 1 FROM dbo.TBL_POS_DISCOUNT_ALLOCATION WHERE ORDER_ID = @OrderId"
+                        command.Parameters.AddWithValue("@OrderId", orderId)
+                        Dim raw = command.ExecuteScalar()
+                        If raw IsNot Nothing AndAlso raw IsNot DBNull.Value Then
+                            Return True
+                        End If
+                    End Using
+                Catch
+                    Return False
+                End Try
+            End If
+
+            Return False
+        End Function
+
         Private Shared Function ToDbValue(value As String) As Object
             If String.IsNullOrWhiteSpace(value) Then
                 Return CType(DBNull.Value, Object)
@@ -1076,28 +1131,47 @@ WHERE ID = @OrderId"
                 End Using
 
                 PopulateLineItems(connection, orders)
+                ' IMPORTANT:
+                ' - New orders: use the new discount tables (TBL_POS_DISCOUNT / TBL_POS_DISCOUNT_ALLOCATION).
+                ' - Old orders (pre-discount-system): fall back to legacy reconstruction (search_issue behavior).
+                For Each order In orders
+                    Dim note As String = Nothing
+                    notesLookup.TryGetValue(order.OrderId, note)
+                    Dim parsedNotes = ParsePaymentNotes(note)
+
+                    Dim hasDiscountRecords = HasDiscountRecordsForOrder(connection, Nothing, order.OrderId)
+                    If hasDiscountRecords Then
+                        Dim breakdown = LoadDiscountBreakdown(connection, Nothing, order.OrderId, order.LineItems)
+                        Dim financials = CalculateFinancialsV2(order.LineItems, parsedNotes, order.TotalAmount, breakdown)
+
+                        order.Subtotal = financials.Subtotal
+                        order.ItemDiscountAmount = financials.ItemDiscountAmount
+                        order.SubtotalDiscountAmount = financials.SubtotalDiscountAmount
+                        order.DiscountAmount = financials.TotalDiscountAmount
+                        order.DiscountPercent = financials.DiscountPercent
+                        order.TaxPercent = financials.TaxPercent
+                        order.TaxAmount = financials.TaxAmount
+                        order.TotalAmount = financials.TotalAmount
+                        order.Discounts = breakdown.Discounts
+                    Else
+                        ' Legacy reconstruction:
+                        ' Discount = (Subtotal + Tax) - FinalTotal
+                        ' where FinalTotal is order.TP (and/or Total:... in NOTES), matching search_issue.
+                        Dim financials = CalculateFinancials(order.LineItems, parsedNotes, order.TotalAmount)
+
+                        order.Subtotal = financials.Subtotal
+                        order.DiscountAmount = financials.DiscountAmount
+                        order.DiscountPercent = financials.DiscountPercent
+                        order.TaxPercent = financials.TaxPercent
+                        order.TaxAmount = financials.TaxAmount
+                        order.TotalAmount = financials.TotalAmount
+
+                        order.ItemDiscountAmount = 0D
+                        order.SubtotalDiscountAmount = 0D
+                        order.Discounts = Nothing
+                    End If
+                Next
             End Using
-
-            ' Keep Sales History resilient: do not depend on discount breakdown tables here.
-            ' (This matches the simpler behavior from the working search_issue implementation.)
-            For Each order In orders
-                Dim note As String = Nothing
-                notesLookup.TryGetValue(order.OrderId, note)
-                Dim parsedNotes = ParsePaymentNotes(note)
-
-                Dim financials = CalculateFinancials(order.LineItems, parsedNotes, order.TotalAmount)
-                order.Subtotal = financials.Subtotal
-                order.DiscountAmount = financials.DiscountAmount
-                order.DiscountPercent = financials.DiscountPercent
-                order.TaxPercent = financials.TaxPercent
-                order.TaxAmount = financials.TaxAmount
-                order.TotalAmount = financials.TotalAmount
-
-                ' New fields remain unset (defaults) for Sales History.
-                order.ItemDiscountAmount = 0D
-                order.SubtotalDiscountAmount = 0D
-                order.Discounts = Nothing
-            Next
 
             Return orders
         End Function
