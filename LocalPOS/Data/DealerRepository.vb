@@ -72,6 +72,7 @@ Namespace LocalPOS.Data
                                         "    Phone3," & vbCrLf &
                                         "    NTN," & vbCrLf &
                                         "    STN," & vbCrLf &
+                                        "    Default_Discount_Percentage," & vbCrLf &
                                         "    [Name] AS LicenseFileName," & vbCrLf &
                                         "    ContentType AS LicenseContentType," & vbCrLf &
                                         "    Data AS LicenseFileData," & vbCrLf &
@@ -117,6 +118,17 @@ Namespace LocalPOS.Data
                     BindDocumentParameters(command, "LogoDoc", request.LogoDocument, includeWhenEmpty:=True)
 
                     Dim newId = Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture)
+
+                    ' Persist optional default discount percent (safe when column exists).
+                    If newId > 0 Then
+                        Using updateCmd = connection.CreateCommand()
+                            updateCmd.CommandText = "UPDATE dbo.TBL_DEALERS SET Default_Discount_Percentage = @Pct WHERE ID = @Id"
+                            updateCmd.Parameters.AddWithValue("@Id", newId)
+                            AddNullableDecimal(updateCmd, "@Pct", request.DefaultDiscountPercentage)
+                            updateCmd.ExecuteNonQuery()
+                        End Using
+                    End If
+
                     Return newId
                 End Using
             End Using
@@ -184,7 +196,8 @@ Namespace LocalPOS.Data
                 "Phone2 = @Phone2",
                 "Phone3 = @Phone3",
                 "NTN = @NTN",
-                "STN = @STN"
+                "STN = @STN",
+                "Default_Discount_Percentage = @DefaultDiscountPercentage"
             }
 
             If BindDocumentParameters(command, "License", request.TradeLicenseDocument, includeWhenEmpty:=False) Then
@@ -261,6 +274,7 @@ Namespace LocalPOS.Data
             dealer.Phone3 = ReadString(reader, "Phone3")
             dealer.Ntn = ReadString(reader, "NTN")
             dealer.Stn = ReadString(reader, "STN")
+            dealer.DefaultDiscountPercentage = ReadNullableDecimal(reader, "Default_Discount_Percentage")
             dealer.TradeLicenseDocument = BuildDocument(reader, "LicenseFileName", "LicenseContentType", "LicenseFileData")
             dealer.CnicDocument = BuildDocument(reader, "NameCNIC", "ContentTypeCNIC", "DataCNIC")
             dealer.NtnDocument = BuildDocument(reader, "NameNTN", "ContentTypeNTN", "DataNTN")
@@ -317,6 +331,7 @@ Namespace LocalPOS.Data
             command.Parameters.AddWithValue("@Phone3", ToDbValue(request.Phone3))
             command.Parameters.AddWithValue("@NTN", ToDbValue(request.Ntn))
             command.Parameters.AddWithValue("@STN", ToDbValue(request.Stn))
+            AddNullableDecimal(command, "@DefaultDiscountPercentage", request.DefaultDiscountPercentage)
             AddFlag(command, "@Status", request.StatusActive)
             AddFlag(command, "@SmsAct", request.SmsEnabled)
             AddFlag(command, "@AppLogin", request.AppLoginEnabled)
@@ -354,6 +369,17 @@ Namespace LocalPOS.Data
 
         Private Shared Sub AddNullableDate(command As SqlCommand, name As String, value As Date?)
             Dim parameter = command.Parameters.Add(name, SqlDbType.DateTime)
+            If value.HasValue Then
+                parameter.Value = value.Value
+            Else
+                parameter.Value = DBNull.Value
+            End If
+        End Sub
+
+        Private Shared Sub AddNullableDecimal(command As SqlCommand, name As String, value As Decimal?)
+            Dim parameter = command.Parameters.Add(name, SqlDbType.Decimal)
+            parameter.Precision = 18
+            parameter.Scale = 4
             If value.HasValue Then
                 parameter.Value = value.Value
             Else
@@ -435,6 +461,14 @@ Namespace LocalPOS.Data
                 Return Nothing
             End If
             Return reader.GetDateTime(ordinal)
+        End Function
+
+        Private Shared Function ReadNullableDecimal(reader As SqlDataReader, column As String) As Decimal?
+            Dim ordinal = reader.GetOrdinal(column)
+            If reader.IsDBNull(ordinal) Then
+                Return Nothing
+            End If
+            Return Convert.ToDecimal(reader.GetValue(ordinal), CultureInfo.InvariantCulture)
         End Function
 
         Private Shared Function ReadFlag(reader As SqlDataReader, column As String) As Boolean

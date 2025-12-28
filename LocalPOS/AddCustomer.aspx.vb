@@ -93,6 +93,11 @@ Public Class AddCustomer
         txtBranch.Text = dealer.Branch
         txtBranchCode.Text = dealer.BranchCode
         txtDealerInvestment.Text = dealer.DealerInvestment
+        If txtDefaultDiscountPercentage IsNot Nothing Then
+            txtDefaultDiscountPercentage.Text = If(dealer.DefaultDiscountPercentage.HasValue,
+                                                  dealer.DefaultDiscountPercentage.Value.ToString("0.####", CultureInfo.InvariantCulture),
+                                                  String.Empty)
+        End If
         txtSalesTerritory.Text = dealer.SalesTerritoryCode?.ToString(CultureInfo.InvariantCulture)
         chkActive.Checked = dealer.StatusActive
         chkSmsAlerts.Checked = dealer.SmsEnabled
@@ -191,6 +196,10 @@ Public Class AddCustomer
         ValidateIntegerField(txtSalesPersonId.Text, "Sales person ID", errors)
         ValidateIntegerField(txtSalesTerritory.Text, "Sales territory code", errors)
 
+        ValidatePercentField(If(txtDefaultDiscountPercentage IsNot Nothing, txtDefaultDiscountPercentage.Text, Nothing),
+                             "Default Discount %",
+                             errors)
+
         Return errors
     End Function
 
@@ -201,6 +210,22 @@ Public Class AddCustomer
         Dim parsed As Integer
         If Not Integer.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, parsed) Then
             errors.Add($"{fieldName} must be numeric.")
+        End If
+    End Sub
+
+    Private Sub ValidatePercentField(input As String, fieldName As String, errors As IList(Of String))
+        If String.IsNullOrWhiteSpace(input) Then
+            Return
+        End If
+
+        Dim parsed As Decimal
+        If Not Decimal.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) Then
+            errors.Add($"{fieldName} must be numeric.")
+            Return
+        End If
+
+        If parsed < 0D OrElse parsed > 100D Then
+            errors.Add($"{fieldName} must be between 0 and 100.")
         End If
     End Sub
 
@@ -218,6 +243,7 @@ Public Class AddCustomer
             .Branch = txtBranch.Text,
             .BranchCode = txtBranchCode.Text,
             .DealerInvestment = txtDealerInvestment.Text,
+            .DefaultDiscountPercentage = ParseNullablePercent(If(txtDefaultDiscountPercentage IsNot Nothing, txtDefaultDiscountPercentage.Text, Nothing)),
             .SalesTerritoryCode = ParseNullableInt(txtSalesTerritory.Text),
             .StatusActive = chkActive.Checked,
             .SmsEnabled = chkSmsAlerts.Checked,
@@ -270,6 +296,21 @@ Public Class AddCustomer
         If Date.TryParse(input, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, parsed) Then
             Return parsed
         End If
+        Return Nothing
+    End Function
+
+    Private Function ParseNullablePercent(input As String) As Decimal?
+        If String.IsNullOrWhiteSpace(input) Then
+            Return Nothing
+        End If
+
+        Dim parsed As Decimal
+        If Decimal.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) Then
+            If parsed < 0D Then parsed = 0D
+            If parsed > 100D Then parsed = 100D
+            Return parsed
+        End If
+
         Return Nothing
     End Function
 

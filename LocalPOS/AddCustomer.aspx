@@ -70,6 +70,11 @@
                     <asp:TextBox runat="server" ID="txtDealerInvestment" CssClass="form-control" />
                 </div>
                 <div class="form-group">
+                    <label for="txtDefaultDiscountPercentage">Default Discount %</label>
+                    <asp:TextBox runat="server" ID="txtDefaultDiscountPercentage" CssClass="form-control" TextMode="Number" />
+                    <small class="text-muted">Optional. Applied automatically in POS.</small>
+                </div>
+                <div class="form-group">
                     <label for="txtSalesTerritory">Sales territory code</label>
                     <asp:TextBox runat="server" ID="txtSalesTerritory" CssClass="form-control" TextMode="Number" />
                 </div>

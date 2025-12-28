@@ -38,6 +38,9 @@ Namespace LocalPOS.Data
                     Try
                         Dim orderId = InsertOrder(connection, transaction, request, orderNumber, inquiryNo, outstanding)
                         InsertOrderItems(connection, transaction, orderId, cartItems, pricing.Lines, request.TaxPercent)
+                        ' Approach 2: customer default discount is a base price adjustment (baked into UnitPrice).
+                        ' We still record it for audit in TBL_POS_DISCOUNT, but it must be hidden from receipts/invoices.
+                        PersistCustomerDefaultDiscounts(connection, transaction, orderId, cartItems, request.CreatedBy)
                         PersistDiscounts(connection, transaction, orderId, pricing, request.CreatedBy)
                         Dim paymentNotes = BuildPaymentNotes(request, outstanding, pricing)
                         InsertPayment(connection, transaction, orderId, paymentReference, request.PaymentMethod, paidAmount, outstanding, request.CreatedBy, paymentNotes)
@@ -314,6 +317,61 @@ WHERE ID = @SkuId"
 
             Return New List(Of CheckoutDiscount)()
         End Function
+
+        Private Shared Sub PersistCustomerDefaultDiscounts(connection As SqlConnection,
+                                                          transaction As SqlTransaction,
+                                                          orderId As Integer,
+                                                          cartItems As IList(Of CartItem),
+                                                          createdBy As String)
+            If connection Is Nothing OrElse orderId <= 0 OrElse cartItems Is Nothing OrElse cartItems.Count = 0 Then
+                Return
+            End If
+
+            ' If the discount table is not present (older DB), skip.
+            Dim hasDiscountTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT")
+            If Not hasDiscountTable Then
+                Return
+            End If
+
+            For Each item In cartItems
+                If item Is Nothing OrElse item.ProductId <= 0 OrElse item.Quantity <= 0 Then
+                    Continue For
+                End If
+
+                Dim pct = ClampPercent(Math.Max(0D, item.CustomerDefaultDiscountPercentApplied))
+                If pct <= 0D Then
+                    Continue For
+                End If
+
+                Dim listUnit = Decimal.Round(Math.Max(0D, item.ListUnitPrice), 2, MidpointRounding.AwayFromZero)
+                If listUnit <= 0D Then
+                    Continue For
+                End If
+
+                Dim listGross = Decimal.Round(listUnit * item.Quantity, 2, MidpointRounding.AwayFromZero)
+                Dim effectiveGross = Decimal.Round(Math.Max(0D, item.UnitPrice) * item.Quantity, 2, MidpointRounding.AwayFromZero)
+                Dim appliedAmount = Decimal.Round(Math.Max(0D, listGross - effectiveGross), 2, MidpointRounding.AwayFromZero)
+                If appliedAmount <= 0D Then
+                    Continue For
+                End If
+
+                Dim applied = New AppliedDiscountSummary() With {
+                    .Scope = "ITEM",
+                    .ValueType = "PERCENT",
+                    .Value = pct,
+                    .AppliedBaseAmount = listGross,
+                    .AppliedAmount = appliedAmount,
+                    .Source = "CustomerDefault",
+                    .Reference = String.Empty,
+                    .Description = "Customer default discount",
+                    .Priority = 1000,
+                    .IsStackable = True,
+                    .TargetProductId = item.ProductId
+                }
+
+                InsertDiscountRecord(connection, transaction, orderId, applied, createdBy)
+            Next
+        End Sub
 
         Private Shared Sub PersistDiscounts(connection As SqlConnection, transaction As SqlTransaction, orderId As Integer, pricing As OrderPricingResult, createdBy As String)
             If connection Is Nothing OrElse pricing Is Nothing OrElse pricing.AppliedDiscounts Is Nothing OrElse pricing.AppliedDiscounts.Count = 0 Then
@@ -1749,7 +1807,8 @@ ORDER BY CREATED_ON DESC, ID DESC"
         Private Shared Function LoadDiscountBreakdown(connection As SqlConnection,
                                                      transaction As SqlTransaction,
                                                      orderId As Integer,
-                                                     lineItems As IList(Of OrderLineItem)) As DiscountBreakdown
+                                                     lineItems As IList(Of OrderLineItem),
+                                                     Optional includeCustomerDefault As Boolean = False) As DiscountBreakdown
             Dim breakdown As New DiscountBreakdown()
             If orderId <= 0 Then
                 Return breakdown
@@ -1803,7 +1862,8 @@ ORDER BY CREATED_ON DESC, ID DESC"
     ISNULL(IS_STACKABLE, 1) AS IS_STACKABLE,
     ISNULL(PRODUCT_ID, 0) AS PRODUCT_ID
 FROM dbo.TBL_POS_DISCOUNT
-WHERE ORDER_ID = @OrderId
+WHERE ORDER_ID = @OrderId" & If(includeCustomerDefault, "", "
+  AND ISNULL(SOURCE, '') <> 'CustomerDefault'") & "
 ORDER BY ID ASC"
                 command.Parameters.AddWithValue("@OrderId", orderId)
 

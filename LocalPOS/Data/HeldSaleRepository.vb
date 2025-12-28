@@ -405,6 +405,7 @@ WHERE ID = @Id"
     PRODUCT_ID,
     SKU_CODE,
     ITEM_NAME,
+    LIST_UNIT_PRICE,
     UNIT_PRICE,
     QUANTITY,
     TAX_RATE,
@@ -417,6 +418,7 @@ VALUES
     @ProductId,
     @SkuCode,
     @Name,
+    @ListUnitPrice,
     @UnitPrice,
     @Quantity,
     @TaxRate,
@@ -427,6 +429,11 @@ VALUES
                     command.Parameters.AddWithValue("@ProductId", item.ProductId)
                     command.Parameters.AddWithValue("@SkuCode", ToDbValue(item.SkuCode))
                     command.Parameters.AddWithValue("@Name", item.Name)
+                    If item.ListUnitPrice > 0D Then
+                        command.Parameters.AddWithValue("@ListUnitPrice", Decimal.Round(item.ListUnitPrice, 4, MidpointRounding.AwayFromZero))
+                    Else
+                        command.Parameters.AddWithValue("@ListUnitPrice", CType(DBNull.Value, Object))
+                    End If
                     command.Parameters.AddWithValue("@UnitPrice", item.UnitPrice)
                     command.Parameters.AddWithValue("@Quantity", item.Quantity)
                     command.Parameters.AddWithValue("@TaxRate", item.TaxRate)
@@ -445,6 +452,7 @@ VALUES
     PRODUCT_ID,
     ISNULL(SKU_CODE, '') AS SKU_CODE,
     ITEM_NAME,
+    LIST_UNIT_PRICE,
     UNIT_PRICE,
     QUANTITY,
     TAX_RATE,
@@ -462,6 +470,7 @@ ORDER BY ID ASC"
                             .ProductId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID")),
                             .SkuCode = reader.GetString(reader.GetOrdinal("SKU_CODE")),
                             .Name = reader.GetString(reader.GetOrdinal("ITEM_NAME")),
+                            .ListUnitPrice = If(reader.IsDBNull(reader.GetOrdinal("LIST_UNIT_PRICE")), CType(Nothing, Decimal?), reader.GetDecimal(reader.GetOrdinal("LIST_UNIT_PRICE"))),
                             .UnitPrice = reader.GetDecimal(reader.GetOrdinal("UNIT_PRICE")),
                             .Quantity = reader.GetInt32(reader.GetOrdinal("QUANTITY")),
                             .TaxRate = reader.GetDecimal(reader.GetOrdinal("TAX_RATE")),
