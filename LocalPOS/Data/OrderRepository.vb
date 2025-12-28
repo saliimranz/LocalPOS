@@ -1076,12 +1076,18 @@ WHERE ID = @OrderId"
                 End Using
 
                 PopulateLineItems(connection, orders)
+                Dim discountLookup = LoadDiscountBreakdownsForOrders(connection, Nothing, orders)
                 For Each order In orders
                     Dim note As String = Nothing
                     notesLookup.TryGetValue(order.OrderId, note)
                     Dim parsedNotes = ParsePaymentNotes(note)
 
-                    Dim breakdown = LoadDiscountBreakdown(connection, Nothing, order.OrderId, order.LineItems)
+                    Dim breakdown As DiscountBreakdown = Nothing
+                    If discountLookup IsNot Nothing AndAlso discountLookup.TryGetValue(order.OrderId, breakdown) Then
+                        ' Use preloaded breakdown.
+                    Else
+                        breakdown = New DiscountBreakdown()
+                    End If
                     Dim financials = CalculateFinancialsV2(order.LineItems, parsedNotes, order.TotalAmount, breakdown)
 
                     order.Subtotal = financials.Subtotal
@@ -1645,6 +1651,173 @@ ORDER BY CREATED_ON DESC, ID DESC"
             Public Property SubtotalDiscountAmount As Decimal
             Public Property Discounts As List(Of AppliedDiscountSummary)
         End Class
+
+        Private Shared Function LoadDiscountBreakdownsForOrders(connection As SqlConnection,
+                                                              transaction As SqlTransaction,
+                                                              orders As IList(Of SalesHistoryOrder)) As Dictionary(Of Integer, DiscountBreakdown)
+            Dim result As New Dictionary(Of Integer, DiscountBreakdown)()
+            If orders Is Nothing OrElse orders.Count = 0 Then
+                Return result
+            End If
+
+            Dim orderIds = orders.Select(Function(o) o.OrderId).Where(Function(id) id > 0).Distinct().ToList()
+            If orderIds.Count = 0 Then
+                Return result
+            End If
+
+            ' Default: no discount metadata; fall back to line-item stored discounts.
+            Dim hasDiscountTable = False
+            Dim hasAllocationTable = False
+
+            If connection IsNot Nothing Then
+                hasDiscountTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT")
+                If Not hasDiscountTable Then
+                    hasAllocationTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT_ALLOCATION")
+                End If
+            End If
+
+            Dim hasItemScopedDiscounts As New HashSet(Of Integer)()
+
+            If connection IsNot Nothing AndAlso hasDiscountTable Then
+                Dim parameterNames As New List(Of String)()
+                For i = 0 To orderIds.Count - 1
+                    parameterNames.Add($"@OrderId{i}")
+                Next
+
+                Using command = connection.CreateCommand()
+                    command.Transaction = transaction
+                    command.CommandText =
+$"SELECT
+    ORDER_ID,
+    ISNULL(SCOPE, '') AS SCOPE,
+    ISNULL(VALUE_TYPE, '') AS VALUE_TYPE,
+    ISNULL(VALUE, 0) AS VALUE,
+    ISNULL(APPLIED_BASE_AMOUNT, 0) AS APPLIED_BASE_AMOUNT,
+    ISNULL(APPLIED_AMOUNT, 0) AS APPLIED_AMOUNT,
+    ISNULL(SOURCE, '') AS SOURCE,
+    ISNULL(REFERENCE, '') AS REFERENCE,
+    ISNULL(DESCRIPTION, '') AS DESCRIPTION,
+    ISNULL(PRIORITY, 0) AS PRIORITY,
+    ISNULL(IS_STACKABLE, 1) AS IS_STACKABLE,
+    ISNULL(PRODUCT_ID, 0) AS PRODUCT_ID
+FROM dbo.TBL_POS_DISCOUNT
+WHERE ORDER_ID IN ({String.Join(",", parameterNames)})
+ORDER BY ORDER_ID ASC, ID ASC"
+
+                    For i = 0 To orderIds.Count - 1
+                        command.Parameters.AddWithValue(parameterNames(i), orderIds(i))
+                    Next
+
+                    Using reader = command.ExecuteReader()
+                        While reader.Read()
+                            Dim orderId = GetDbInt32(reader, "ORDER_ID")
+                            If orderId <= 0 Then
+                                Continue While
+                            End If
+
+                            Dim breakdown As DiscountBreakdown = Nothing
+                            If Not result.TryGetValue(orderId, breakdown) Then
+                                breakdown = New DiscountBreakdown()
+                                result(orderId) = breakdown
+                            End If
+
+                            Dim scope = reader.GetString(reader.GetOrdinal("SCOPE"))
+                            Dim appliedAmount = reader.GetDecimal(reader.GetOrdinal("APPLIED_AMOUNT"))
+                            Dim summary As New AppliedDiscountSummary() With {
+                                .scope = scope,
+                                .ValueType = reader.GetString(reader.GetOrdinal("VALUE_TYPE")),
+                                .Value = reader.GetDecimal(reader.GetOrdinal("VALUE")),
+                                .AppliedBaseAmount = reader.GetDecimal(reader.GetOrdinal("APPLIED_BASE_AMOUNT")),
+                                .appliedAmount = appliedAmount,
+                                .Source = reader.GetString(reader.GetOrdinal("SOURCE")),
+                                .Reference = reader.GetString(reader.GetOrdinal("REFERENCE")),
+                                .Description = reader.GetString(reader.GetOrdinal("DESCRIPTION")),
+                                .Priority = reader.GetInt32(reader.GetOrdinal("PRIORITY")),
+                                .IsStackable = reader.GetBoolean(reader.GetOrdinal("IS_STACKABLE"))
+                            }
+
+                            Dim productId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID"))
+                            If productId > 0 Then
+                                summary.TargetProductId = productId
+                            End If
+
+                            breakdown.Discounts.Add(summary)
+
+                            If scope.Equals("ITEM", StringComparison.OrdinalIgnoreCase) Then
+                                hasItemScopedDiscounts.Add(orderId)
+                                breakdown.ItemDiscountAmount += Math.Max(0D, appliedAmount)
+                            ElseIf scope.Equals("SUBTOTAL", StringComparison.OrdinalIgnoreCase) Then
+                                breakdown.SubtotalDiscountAmount += Math.Max(0D, appliedAmount)
+                            End If
+                        End While
+                    End Using
+                End Using
+            ElseIf connection IsNot Nothing AndAlso hasAllocationTable Then
+                Dim parameterNames As New List(Of String)()
+                For i = 0 To orderIds.Count - 1
+                    parameterNames.Add($"@OrderId{i}")
+                Next
+
+                Using command = connection.CreateCommand()
+                    command.Transaction = transaction
+                    command.CommandText =
+$"SELECT
+    ORDER_ID,
+    ISNULL(SUM(ALLOCATED_AMOUNT), 0) AS TOTAL_ALLOCATED
+FROM dbo.TBL_POS_DISCOUNT_ALLOCATION
+WHERE ORDER_ID IN ({String.Join(",", parameterNames)})
+GROUP BY ORDER_ID"
+
+                    For i = 0 To orderIds.Count - 1
+                        command.Parameters.AddWithValue(parameterNames(i), orderIds(i))
+                    Next
+
+                    Using reader = command.ExecuteReader()
+                        While reader.Read()
+                            Dim orderId = GetDbInt32(reader, "ORDER_ID")
+                            If orderId <= 0 Then
+                                Continue While
+                            End If
+
+                            Dim breakdown As DiscountBreakdown = Nothing
+                            If Not result.TryGetValue(orderId, breakdown) Then
+                                breakdown = New DiscountBreakdown()
+                                result(orderId) = breakdown
+                            End If
+
+                            breakdown.SubtotalDiscountAmount = reader.GetDecimal(reader.GetOrdinal("TOTAL_ALLOCATED"))
+                        End While
+                    End Using
+                End Using
+            End If
+
+            ' Normalize + apply fallback item discounts (mirrors LoadDiscountBreakdown behavior).
+            For Each order In orders
+                Dim orderId = order.OrderId
+                If orderId <= 0 Then
+                    Continue For
+                End If
+
+                Dim breakdown As DiscountBreakdown = Nothing
+                If Not result.TryGetValue(orderId, breakdown) Then
+                    breakdown = New DiscountBreakdown()
+                    result(orderId) = breakdown
+                End If
+
+                Dim fallbackItemDiscount = If(order.LineItems IsNot Nothing AndAlso order.LineItems.Count > 0,
+                                              order.LineItems.Sum(Function(i) Math.Max(0D, i.DiscountAmount)),
+                                              0D)
+
+                If (Not hasDiscountTable) OrElse (Not hasItemScopedDiscounts.Contains(orderId)) Then
+                    breakdown.ItemDiscountAmount = Math.Max(0D, fallbackItemDiscount)
+                End If
+
+                breakdown.ItemDiscountAmount = Decimal.Round(Math.Max(0D, breakdown.ItemDiscountAmount), 2, MidpointRounding.AwayFromZero)
+                breakdown.SubtotalDiscountAmount = Decimal.Round(Math.Max(0D, breakdown.SubtotalDiscountAmount), 2, MidpointRounding.AwayFromZero)
+            Next
+
+            Return result
+        End Function
 
         Private Shared Function LoadDiscountBreakdown(connection As SqlConnection,
                                                      transaction As SqlTransaction,
