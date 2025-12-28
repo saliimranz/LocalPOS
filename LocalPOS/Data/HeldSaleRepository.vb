@@ -400,33 +400,38 @@ WHERE ID = @Id"
             For Each item In items
                 Using command = connection.CreateCommand()
                     command.Transaction = transaction
-                    command.CommandText =
-"INSERT INTO dbo.TBL_POS_HELD_SALE_ITEM
-(
-    HELD_SALE_ID,
-    PRODUCT_ID,
-    SKU_CODE,
-    ITEM_NAME,
-    UNIT_PRICE,
-    " & If(hasListUnitPriceColumn, "LIST_UNIT_PRICE," & vbCrLf & "    ", String.Empty) &
-    QUANTITY,
-    TAX_RATE,
-    LINE_TOTAL,
-    THUMBNAIL_URL
-)
-VALUES
-(
-    @HeldSaleId,
-    @ProductId,
-    @SkuCode,
-    @Name,
-    @UnitPrice,
-    " & If(hasListUnitPriceColumn, "@ListUnitPrice," & vbCrLf & "    ", String.Empty) &
-    @Quantity,
-    @TaxRate,
-    @LineTotal,
-    @Thumbnail
-)"
+                    Dim sql As New System.Text.StringBuilder()
+                    sql.AppendLine("INSERT INTO dbo.TBL_POS_HELD_SALE_ITEM")
+                    sql.AppendLine("(")
+                    sql.AppendLine("    HELD_SALE_ID,")
+                    sql.AppendLine("    PRODUCT_ID,")
+                    sql.AppendLine("    SKU_CODE,")
+                    sql.AppendLine("    ITEM_NAME,")
+                    sql.AppendLine("    UNIT_PRICE,")
+                    If hasListUnitPriceColumn Then
+                        sql.AppendLine("    LIST_UNIT_PRICE,")
+                    End If
+                    sql.AppendLine("    QUANTITY,")
+                    sql.AppendLine("    TAX_RATE,")
+                    sql.AppendLine("    LINE_TOTAL,")
+                    sql.AppendLine("    THUMBNAIL_URL")
+                    sql.AppendLine(")")
+                    sql.AppendLine("VALUES")
+                    sql.AppendLine("(")
+                    sql.AppendLine("    @HeldSaleId,")
+                    sql.AppendLine("    @ProductId,")
+                    sql.AppendLine("    @SkuCode,")
+                    sql.AppendLine("    @Name,")
+                    sql.AppendLine("    @UnitPrice,")
+                    If hasListUnitPriceColumn Then
+                        sql.AppendLine("    @ListUnitPrice,")
+                    End If
+                    sql.AppendLine("    @Quantity,")
+                    sql.AppendLine("    @TaxRate,")
+                    sql.AppendLine("    @LineTotal,")
+                    sql.AppendLine("    @Thumbnail")
+                    sql.AppendLine(")")
+                    command.CommandText = sql.ToString()
                     command.Parameters.AddWithValue("@HeldSaleId", heldSaleId)
                     command.Parameters.AddWithValue("@ProductId", item.ProductId)
                     command.Parameters.AddWithValue("@SkuCode", ToDbValue(item.SkuCode))
@@ -451,21 +456,24 @@ VALUES
         Private Shared Sub FillHeldSaleItems(connection As SqlConnection, heldSaleId As Integer, buffer As IList(Of HeldSaleItem))
             Using command = connection.CreateCommand()
                 Dim hasListUnitPriceColumn = ColumnExists(connection, Nothing, "dbo", "TBL_POS_HELD_SALE_ITEM", "LIST_UNIT_PRICE")
-                command.CommandText =
-"SELECT
-    HELD_SALE_ID,
-    PRODUCT_ID,
-    ISNULL(SKU_CODE, '') AS SKU_CODE,
-    ITEM_NAME,
-    UNIT_PRICE,
-    " & If(hasListUnitPriceColumn, "LIST_UNIT_PRICE," & vbCrLf, String.Empty) &
-    QUANTITY,
-    TAX_RATE,
-    LINE_TOTAL,
-    ISNULL(THUMBNAIL_URL, '') AS THUMBNAIL_URL
-FROM dbo.TBL_POS_HELD_SALE_ITEM
-WHERE HELD_SALE_ID = @HeldSaleId
-ORDER BY ID ASC"
+                Dim sql As New System.Text.StringBuilder()
+                sql.AppendLine("SELECT")
+                sql.AppendLine("    HELD_SALE_ID,")
+                sql.AppendLine("    PRODUCT_ID,")
+                sql.AppendLine("    ISNULL(SKU_CODE, '') AS SKU_CODE,")
+                sql.AppendLine("    ITEM_NAME,")
+                sql.AppendLine("    UNIT_PRICE,")
+                If hasListUnitPriceColumn Then
+                    sql.AppendLine("    LIST_UNIT_PRICE,")
+                End If
+                sql.AppendLine("    QUANTITY,")
+                sql.AppendLine("    TAX_RATE,")
+                sql.AppendLine("    LINE_TOTAL,")
+                sql.AppendLine("    ISNULL(THUMBNAIL_URL, '') AS THUMBNAIL_URL")
+                sql.AppendLine("FROM dbo.TBL_POS_HELD_SALE_ITEM")
+                sql.AppendLine("WHERE HELD_SALE_ID = @HeldSaleId")
+                sql.AppendLine("ORDER BY ID ASC")
+                command.CommandText = sql.ToString()
                 command.Parameters.AddWithValue("@HeldSaleId", heldSaleId)
 
                 Using reader = command.ExecuteReader()
