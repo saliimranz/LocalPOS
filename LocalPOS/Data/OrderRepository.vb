@@ -1812,17 +1812,16 @@ ORDER BY ID ASC"
                         Dim scope = reader.GetString(reader.GetOrdinal("SCOPE"))
                         Dim appliedAmount = reader.GetDecimal(reader.GetOrdinal("APPLIED_AMOUNT"))
                         Dim summary As New AppliedDiscountSummary() With {
-                            .scope = scope,
+                            .Scope = scope,
                             .ValueType = reader.GetString(reader.GetOrdinal("VALUE_TYPE")),
                             .Value = reader.GetDecimal(reader.GetOrdinal("VALUE")),
                             .AppliedBaseAmount = reader.GetDecimal(reader.GetOrdinal("APPLIED_BASE_AMOUNT")),
-                            .appliedAmount = appliedAmount,
+                            .AppliedAmount = appliedAmount,
                             .Source = reader.GetString(reader.GetOrdinal("SOURCE")),
                             .Reference = reader.GetString(reader.GetOrdinal("REFERENCE")),
                             .Description = reader.GetString(reader.GetOrdinal("DESCRIPTION")),
                             .Priority = reader.GetInt32(reader.GetOrdinal("PRIORITY")),
-                            ' Some environments have IS_STACKABLE as INT (0/1) instead of BIT; GetBoolean throws in that case.
-                            .IsStackable = Convert.ToBoolean(reader("IS_STACKABLE"))
+                        .IsStackable = Convert.ToBoolean(reader("IS_STACKABLE"))
                         }
 
                         Dim productId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID"))
