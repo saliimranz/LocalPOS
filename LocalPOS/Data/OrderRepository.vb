@@ -465,6 +465,61 @@ VALUES
             End Using
         End Function
 
+        Private Shared Function HasDiscountRecordsForOrder(connection As SqlConnection, transaction As SqlTransaction, orderId As Integer) As Boolean
+            If connection Is Nothing OrElse orderId <= 0 Then
+                Return False
+            End If
+
+            Dim hasDiscountTable As Boolean
+            Dim hasAllocationTable As Boolean
+            Try
+                hasDiscountTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT")
+                hasAllocationTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT_ALLOCATION")
+            Catch
+                Return False
+            End Try
+
+            If Not hasDiscountTable AndAlso Not hasAllocationTable Then
+                Return False
+            End If
+
+            ' Prefer checking the intent table first (TBL_POS_DISCOUNT), then the allocation table.
+            If hasDiscountTable Then
+                Try
+                    Using command = connection.CreateCommand()
+                        command.Transaction = transaction
+                        command.CommandText = "SELECT TOP 1 1 FROM dbo.TBL_POS_DISCOUNT WHERE ORDER_ID = @OrderId"
+                        command.Parameters.AddWithValue("@OrderId", orderId)
+                        Dim raw = command.ExecuteScalar()
+                        If raw IsNot Nothing AndAlso raw IsNot DBNull.Value Then
+                            Return True
+                        End If
+                    End Using
+                Catch
+                    ' If the discount table exists but the schema is unexpected, fall back to legacy logic.
+                    Return False
+                End Try
+            End If
+
+            If hasAllocationTable Then
+                Try
+                    Using command = connection.CreateCommand()
+                        command.Transaction = transaction
+                        command.CommandText = "SELECT TOP 1 1 FROM dbo.TBL_POS_DISCOUNT_ALLOCATION WHERE ORDER_ID = @OrderId"
+                        command.Parameters.AddWithValue("@OrderId", orderId)
+                        Dim raw = command.ExecuteScalar()
+                        If raw IsNot Nothing AndAlso raw IsNot DBNull.Value Then
+                            Return True
+                        End If
+                    End Using
+                Catch
+                    Return False
+                End Try
+            End If
+
+            Return False
+        End Function
+
         Private Shared Function ToDbValue(value As String) As Object
             If String.IsNullOrWhiteSpace(value) Then
                 Return CType(DBNull.Value, Object)
@@ -1076,27 +1131,72 @@ WHERE ID = @OrderId"
                 End Using
 
                 PopulateLineItems(connection, orders)
+                ' Performance: Sales History does not compute discounts. (Avoids N+1 queries + legacy reconstruction.)
                 For Each order In orders
                     Dim note As String = Nothing
                     notesLookup.TryGetValue(order.OrderId, note)
                     Dim parsedNotes = ParsePaymentNotes(note)
 
-                    Dim breakdown = LoadDiscountBreakdown(connection, Nothing, order.OrderId, order.LineItems)
-                    Dim financials = CalculateFinancialsV2(order.LineItems, parsedNotes, order.TotalAmount, breakdown)
-
+                    Dim financials = CalculateFinancialsNoDiscount(order.LineItems, parsedNotes, order.TotalAmount)
                     order.Subtotal = financials.Subtotal
-                    order.ItemDiscountAmount = financials.ItemDiscountAmount
-                    order.SubtotalDiscountAmount = financials.SubtotalDiscountAmount
-                    order.DiscountAmount = financials.TotalDiscountAmount
-                    order.DiscountPercent = financials.DiscountPercent
                     order.TaxPercent = financials.TaxPercent
                     order.TaxAmount = financials.TaxAmount
                     order.TotalAmount = financials.TotalAmount
-                    order.Discounts = breakdown.Discounts
+
+                    order.DiscountAmount = 0D
+                    order.DiscountPercent = 0D
+                    order.ItemDiscountAmount = 0D
+                    order.SubtotalDiscountAmount = 0D
+                    order.Discounts = Nothing
                 Next
             End Using
 
             Return orders
+        End Function
+
+        Private Shared Function CalculateFinancialsNoDiscount(lineItems As IList(Of OrderLineItem),
+                                                             notes As IDictionary(Of String, String),
+                                                             fallbackTotal As Decimal) As OrderFinancials
+            Dim subtotalGross = If(lineItems IsNot Nothing AndAlso lineItems.Count > 0, lineItems.Sum(Function(i) Math.Max(0D, i.LineTotal)), 0D)
+            subtotalGross = Decimal.Round(Math.Max(0D, subtotalGross), 2, MidpointRounding.AwayFromZero)
+
+            Dim totalFromNotes = GetNoteDecimal(notes, "Total")
+            Dim vatPercent = GetNoteDecimal(notes, "VAT")
+
+            Dim totalDue = If(totalFromNotes > 0D, totalFromNotes, fallbackTotal)
+            If totalDue <= 0D Then
+                totalDue = subtotalGross
+            End If
+            totalDue = Decimal.Round(Math.Max(0D, totalDue), 2, MidpointRounding.AwayFromZero)
+
+            ' Prefer recorded line-level tax if present; otherwise infer from VAT% in notes.
+            Dim lineTax = If(lineItems IsNot Nothing AndAlso lineItems.Count > 0, lineItems.Sum(Function(i) Math.Max(0D, i.TaxAmount)), 0D)
+            lineTax = Decimal.Round(Math.Max(0D, lineTax), 2, MidpointRounding.AwayFromZero)
+
+            Dim taxAmount = lineTax
+            If taxAmount <= 0D AndAlso vatPercent > 0D AndAlso totalDue > 0D Then
+                Dim divisor = 1D + (vatPercent / 100D)
+                Dim taxableBase = If(divisor = 0D, totalDue, Decimal.Round(totalDue / divisor, 2, MidpointRounding.AwayFromZero))
+                taxAmount = Decimal.Round(Math.Max(0D, totalDue - taxableBase), 2, MidpointRounding.AwayFromZero)
+            End If
+
+            If vatPercent <= 0D Then
+                Dim baseAmount = Math.Max(0D, totalDue - taxAmount)
+                If baseAmount > 0D AndAlso taxAmount > 0D Then
+                    vatPercent = Decimal.Round((taxAmount / baseAmount) * 100D, 2, MidpointRounding.AwayFromZero)
+                End If
+            End If
+
+            Return New OrderFinancials() With {
+                .Subtotal = subtotalGross,
+                .ItemDiscountAmount = 0D,
+                .SubtotalDiscountAmount = 0D,
+                .TotalDiscountAmount = 0D,
+                .DiscountPercent = 0D,
+                .TaxPercent = vatPercent,
+                .TaxAmount = taxAmount,
+                .TotalAmount = totalDue
+            }
         End Function
 
         Public Function GetOrderReceipt(orderId As Integer) As OrderReceiptData
@@ -1117,6 +1217,9 @@ WHERE ID = @OrderId"
                 If Not itemsLookup.TryGetValue(orderId, items) Then
                     items = New List(Of OrderLineItem)()
                 End If
+
+                ' Populate subtotal-discount allocations per item (when available) for the invoice template.
+                ApplySubtotalDiscountAllocations(connection, orderId, items)
 
                 Dim primaryNotes = If(primaryPayment IsNot Nothing, primaryPayment.Notes, Nothing)
                 Dim parsedNotes = ParsePaymentNotes(primaryNotes)
@@ -1173,6 +1276,96 @@ WHERE ID = @OrderId"
 
                 Return receipt
             End Using
+        End Function
+
+        Private Shared Sub ApplySubtotalDiscountAllocations(connection As SqlConnection, orderId As Integer, items As IList(Of OrderLineItem))
+            If connection Is Nothing OrElse orderId <= 0 OrElse items Is Nothing OrElse items.Count = 0 Then
+                Return
+            End If
+
+            Dim hasAllocationTable = TableExists(connection, Nothing, "dbo", "TBL_POS_DISCOUNT_ALLOCATION")
+            If Not hasAllocationTable Then
+                Return
+            End If
+
+            Dim allocationsByProduct = LoadSubtotalDiscountAllocationByProduct(connection, orderId)
+            If allocationsByProduct Is Nothing OrElse allocationsByProduct.Count = 0 Then
+                Return
+            End If
+
+            ' Allocation rows are keyed by PRODUCT_ID. If multiple line items share a product id,
+            ' distribute the product-level allocation proportionally across those rows.
+            Dim grouped = items.GroupBy(Function(i) i.ProductId)
+            For Each group In grouped
+                Dim productId = group.Key
+                If productId <= 0 OrElse Not allocationsByProduct.ContainsKey(productId) Then
+                    Continue For
+                End If
+
+                Dim totalAlloc = Decimal.Round(Math.Max(0D, allocationsByProduct(productId)), 2, MidpointRounding.AwayFromZero)
+                Dim rows = group.ToList()
+                If rows.Count = 1 Then
+                    rows(0).SubtotalDiscountAllocationAmount = totalAlloc
+                    Continue For
+                End If
+
+                ' Prefer allocating against the post-item-discount base so the impact mirrors pricing allocation.
+                Dim bases = rows.Select(Function(r) Decimal.Round(Math.Max(0D, r.LineTotal - Math.Max(0D, r.DiscountAmount)), 2, MidpointRounding.AwayFromZero)).ToList()
+                Dim baseSum = bases.Sum()
+
+                Dim allocations As New List(Of Decimal)()
+                If baseSum <= 0D Then
+                    Dim even = Decimal.Round(totalAlloc / rows.Count, 2, MidpointRounding.AwayFromZero)
+                    For i = 0 To rows.Count - 1
+                        allocations.Add(even)
+                    Next
+                Else
+                    For i = 0 To rows.Count - 1
+                        Dim share = Decimal.Round((bases(i) / baseSum) * totalAlloc, 2, MidpointRounding.AwayFromZero)
+                        allocations.Add(share)
+                    Next
+                End If
+
+                ' Fix rounding delta on the last row.
+                Dim delta = Decimal.Round(totalAlloc - allocations.Sum(), 2, MidpointRounding.AwayFromZero)
+                If allocations.Count > 0 AndAlso delta <> 0D Then
+                    allocations(allocations.Count - 1) = Decimal.Round(Math.Max(0D, allocations(allocations.Count - 1) + delta), 2, MidpointRounding.AwayFromZero)
+                End If
+
+                For i = 0 To rows.Count - 1
+                    rows(i).SubtotalDiscountAllocationAmount = Decimal.Round(Math.Max(0D, allocations(i)), 2, MidpointRounding.AwayFromZero)
+                Next
+            Next
+        End Sub
+
+        Private Shared Function LoadSubtotalDiscountAllocationByProduct(connection As SqlConnection, orderId As Integer) As Dictionary(Of Integer, Decimal)
+            Dim result As New Dictionary(Of Integer, Decimal)()
+            If connection Is Nothing OrElse orderId <= 0 Then
+                Return result
+            End If
+
+            Using command = connection.CreateCommand()
+                command.CommandText =
+"SELECT
+    PRODUCT_ID,
+    ISNULL(SUM(ALLOCATED_AMOUNT), 0) AS ALLOCATED_AMOUNT
+FROM dbo.TBL_POS_DISCOUNT_ALLOCATION
+WHERE ORDER_ID = @OrderId
+GROUP BY PRODUCT_ID"
+                command.Parameters.AddWithValue("@OrderId", orderId)
+
+                Using reader = command.ExecuteReader()
+                    While reader.Read()
+                        Dim productId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID"))
+                        Dim allocated = reader.GetDecimal(reader.GetOrdinal("ALLOCATED_AMOUNT"))
+                        If productId > 0 Then
+                            result(productId) = Decimal.Round(Math.Max(0D, allocated), 2, MidpointRounding.AwayFromZero)
+                        End If
+                    End While
+                End Using
+            End Using
+
+            Return result
         End Function
 
         Public Function GetSettlementReceipt(orderId As Integer, receiptNumber As String) As PendingPaymentResult
@@ -1628,7 +1821,8 @@ ORDER BY ID ASC"
                             .Reference = reader.GetString(reader.GetOrdinal("REFERENCE")),
                             .Description = reader.GetString(reader.GetOrdinal("DESCRIPTION")),
                             .Priority = reader.GetInt32(reader.GetOrdinal("PRIORITY")),
-                            .IsStackable = reader.GetBoolean(reader.GetOrdinal("IS_STACKABLE"))
+                            ' Some environments have IS_STACKABLE as INT (0/1) instead of BIT; GetBoolean throws in that case.
+                            .IsStackable = Convert.ToBoolean(reader("IS_STACKABLE"))
                         }
 
                         Dim productId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID"))
