@@ -22,12 +22,7 @@
             </div>
         </div>
 
-        <asp:UpdatePanel runat="server" ID="upSalesHistory" UpdateMode="Conditional" ChildrenAsTriggers="true">
-            <Triggers>
-                <asp:AsyncPostBackTrigger ControlID="ddlDateRange" EventName="SelectedIndexChanged" />
-                <%-- Force full postback for Apply to avoid silent MS AJAX failures. --%>
-                <asp:PostBackTrigger ControlID="btnApplyFilters" />
-            </Triggers>
+        <asp:UpdatePanel runat="server" ID="upSalesHistory" UpdateMode="Conditional">
             <ContentTemplate>
                 <div class="history-filters card mb-4">
                     <div class="card-body">

@@ -57,36 +57,33 @@ Public Class SalesHistory
         Dim filter As New SalesHistoryFilter()
         Dim today = DateTime.Today
 
-        ' Prefer explicit From/To inputs when both are provided.
-        ' This makes the Apply button reliable even if the quick-range dropdown
-        ' value is lost/reset by the browser or viewstate.
-        Dim fromDate = ParseDate(txtFromDate.Text)
-        Dim toDate = ParseDate(txtToDate.Text)
+        Select Case ddlDateRange.SelectedValue
+            Case "Yesterday"
+                Dim target = today.AddDays(-1)
+                SetDateInputs(target, target)
+                filter.FromDate = target
+                filter.ToDate = target
+            Case "Custom"
+                Dim fromDate = ParseDate(txtFromDate.Text)
+                Dim toDate = ParseDate(txtToDate.Text)
 
-        If fromDate.HasValue AndAlso toDate.HasValue Then
-            If fromDate.Value > toDate.Value Then
-                lblFilterMessage.Text = "From date cannot be later than To date."
-                Return Nothing
-            End If
-
-            filter.FromDate = fromDate
-            filter.ToDate = toDate
-        Else
-            Select Case ddlDateRange.SelectedValue
-                Case "Yesterday"
-                    Dim target = today.AddDays(-1)
-                    SetDateInputs(target, target)
-                    filter.FromDate = target
-                    filter.ToDate = target
-                Case "Custom"
+                If Not fromDate.HasValue OrElse Not toDate.HasValue Then
                     lblFilterMessage.Text = "Select both From and To dates for a custom range."
                     Return Nothing
-                Case Else
-                    SetDateInputs(today, today)
-                    filter.FromDate = today
-                    filter.ToDate = today
-            End Select
-        End If
+                End If
+
+                If fromDate.Value > toDate.Value Then
+                    lblFilterMessage.Text = "From date cannot be later than To date."
+                    Return Nothing
+                End If
+
+                filter.FromDate = fromDate
+                filter.ToDate = toDate
+            Case Else
+                SetDateInputs(today, today)
+                filter.FromDate = today
+                filter.ToDate = today
+        End Select
 
         filter.OrderNumber = txtOrderSearch.Text.Trim()
         Return filter
