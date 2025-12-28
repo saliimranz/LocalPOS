@@ -1160,7 +1160,7 @@ WHERE ID = @OrderId"
                         Dim financials = CalculateFinancials(order.LineItems, parsedNotes, order.TotalAmount)
 
                         order.Subtotal = financials.Subtotal
-                        order.DiscountAmount = financials.DiscountAmount
+                        order.DiscountAmount = financials.TotalDiscountAmount
                         order.DiscountPercent = financials.DiscountPercent
                         order.TaxPercent = financials.TaxPercent
                         order.TaxAmount = financials.TaxAmount
