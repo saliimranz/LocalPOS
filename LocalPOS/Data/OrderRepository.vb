@@ -1721,7 +1721,8 @@ ORDER BY ID ASC"
                             .Reference = reader.GetString(reader.GetOrdinal("REFERENCE")),
                             .Description = reader.GetString(reader.GetOrdinal("DESCRIPTION")),
                             .Priority = reader.GetInt32(reader.GetOrdinal("PRIORITY")),
-                            .IsStackable = reader.GetBoolean(reader.GetOrdinal("IS_STACKABLE"))
+                            ' Some environments have IS_STACKABLE as INT (0/1) instead of BIT; GetBoolean throws in that case.
+                            .IsStackable = Convert.ToBoolean(reader("IS_STACKABLE"))
                         }
 
                         Dim productId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID"))
