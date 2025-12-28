@@ -77,6 +77,16 @@ Public Class _Default
         End Set
     End Property
 
+    ' Customer default discount (base-price layer) percentage for the currently selected customer.
+    Private Property CustomerDefaultDiscountPercentValue As Decimal
+        Get
+            Return If(ViewState("CustomerDefaultDiscountPercent") IsNot Nothing, CType(ViewState("CustomerDefaultDiscountPercent"), Decimal), 0D)
+        End Get
+        Set(value As Decimal)
+            ViewState("CustomerDefaultDiscountPercent") = value
+        End Set
+    End Property
+
     Private Property ActiveHeldSaleId As Integer?
         Get
             If hfActiveHeldSaleId Is Nothing Then
@@ -129,6 +139,8 @@ Public Class _Default
 
         If requestedCustomerId > 0 Then
             SetSelectedCustomer(requestedCustomerId)
+            ' Apply customer default discount base-price layer (avoid passing it to PricingEngine).
+            HandleCustomerChanged(repriceCart:=True, rebindProducts:=True)
         End If
 
         UpdateCustomerProfileButtonState()
@@ -388,7 +400,21 @@ Public Class _Default
             Return
         End If
 
-        item.ItemDiscountValue = parsed
+        Dim mode = If(String.IsNullOrWhiteSpace(item.ItemDiscountMode), DiscountModePercent, item.ItemDiscountMode)
+        If mode.Equals(DiscountModeAmount, StringComparison.OrdinalIgnoreCase) Then
+            ' Align UI with engine cap: amount discount cannot exceed current line gross (after customer default discount).
+            Dim lineBase = Decimal.Round(Math.Max(0D, item.UnitPrice * item.Quantity), 2, MidpointRounding.AwayFromZero)
+            Dim capped = Math.Min(parsed, lineBase)
+            capped = Decimal.Round(Math.Max(0D, capped), 2, MidpointRounding.AwayFromZero)
+            item.ItemDiscountValue = capped
+
+            If capped <> parsed Then
+                input.Text = capped.ToString(CultureInfo.InvariantCulture)
+                ShowCartMessage($"Item discount for {item.Name} was capped to {capped.ToString("C", CultureInfo.CurrentCulture)} because it exceeded the item price.", False)
+            End If
+        Else
+            item.ItemDiscountValue = parsed
+        End If
         BindCart()
     End Sub
 
@@ -553,16 +579,25 @@ Public Class _Default
         Dim existing = cart.FirstOrDefault(Function(item) item.ProductId = product.Id)
 
         If existing Is Nothing Then
+            Dim defaultPct = GetSelectedCustomerDefaultDiscountPercent()
+            Dim listUnitPrice = product.UnitPrice
+            Dim effectiveUnitPrice = ApplyCustomerDefaultDiscount(listUnitPrice, defaultPct)
             cart.Add(New CartItem() With {
                 .ProductId = product.Id,
                 .SkuCode = product.SkuCode,
                 .Name = product.DisplayName,
-                .UnitPrice = product.UnitPrice,
+                .ListUnitPrice = listUnitPrice,
+                .UnitPrice = effectiveUnitPrice,
                 .Quantity = 1,
                 .TaxRate = product.TaxRate,
-                .Thumbnail = product.ImageUrl
+                .Thumbnail = product.ImageUrl,
+                .CustomerDefaultDiscountPercentApplied = defaultPct
             })
         Else
+            ' Backward compatibility: if an older cart line does not have ListUnitPrice, treat UnitPrice as baseline.
+            If existing.ListUnitPrice <= 0D Then
+                existing.ListUnitPrice = existing.UnitPrice
+            End If
             If existing.Quantity >= product.StockQuantity Then
                 ShowCartMessage("Cannot add more than available stock.", False)
                 Return
@@ -631,8 +666,7 @@ Public Class _Default
     End Sub
 
     Protected Sub ddlCustomers_SelectedIndexChanged(sender As Object, e As EventArgs)
-        UpdatePaymentAvailability()
-        UpdateCustomerProfileButtonState()
+        HandleCustomerChanged(repriceCart:=True, rebindProducts:=True)
     End Sub
 
     Protected Sub btnViewCustomerProfile_Click(sender As Object, e As EventArgs)
@@ -714,7 +748,87 @@ Public Class _Default
 
         UpdatePaymentAvailability()
         UpdateCustomerProfileButtonState()
+        RefreshSelectedCustomerDefaultDiscountPercent()
     End Sub
+
+    Private Sub HandleCustomerChanged(repriceCart As Boolean, rebindProducts As Boolean)
+        UpdatePaymentAvailability()
+        UpdateCustomerProfileButtonState()
+        RefreshSelectedCustomerDefaultDiscountPercent()
+
+        If repriceCart Then
+            RepriceCartForSelectedCustomer()
+        End If
+
+        BindCart()
+
+        If rebindProducts Then
+            BindProducts()
+        End If
+    End Sub
+
+    Private Sub RefreshSelectedCustomerDefaultDiscountPercent()
+        Dim selectedId As Integer
+        If ddlCustomers Is Nothing OrElse ddlCustomers.SelectedItem Is Nothing OrElse Not Integer.TryParse(ddlCustomers.SelectedValue, NumberStyles.Integer, CultureInfo.InvariantCulture, selectedId) Then
+            CustomerDefaultDiscountPercentValue = 0D
+            Return
+        End If
+
+        If selectedId <= 0 Then
+            CustomerDefaultDiscountPercentValue = 0D
+            Return
+        End If
+
+        Try
+            Dim dealer = _posService.GetDealer(selectedId)
+            Dim pct = If(dealer IsNot Nothing AndAlso dealer.DefaultDiscountPercentage.HasValue, dealer.DefaultDiscountPercentage.Value, 0D)
+            CustomerDefaultDiscountPercentValue = ClampPercent(pct)
+        Catch
+            CustomerDefaultDiscountPercentValue = 0D
+        End Try
+    End Sub
+
+    Private Function GetSelectedCustomerDefaultDiscountPercent() As Decimal
+        Return ClampPercent(CustomerDefaultDiscountPercentValue)
+    End Function
+
+    Private Sub RepriceCartForSelectedCustomer()
+        Dim cart = GetCart()
+        If cart Is Nothing OrElse cart.Count = 0 Then
+            Return
+        End If
+
+        Dim pct = GetSelectedCustomerDefaultDiscountPercent()
+        For Each item In cart
+            If item Is Nothing Then
+                Continue For
+            End If
+
+            ' Backwards compatibility: older session carts may not have ListUnitPrice stored yet.
+            If item.ListUnitPrice <= 0D Then
+                item.ListUnitPrice = item.UnitPrice
+            End If
+
+            item.UnitPrice = ApplyCustomerDefaultDiscount(item.ListUnitPrice, pct)
+            item.CustomerDefaultDiscountPercentApplied = pct
+        Next
+    End Sub
+
+    Private Shared Function ApplyCustomerDefaultDiscount(listUnitPrice As Decimal, discountPercent As Decimal) As Decimal
+        Dim safeList = Math.Max(0D, listUnitPrice)
+        Dim pct = ClampPercent(discountPercent)
+        If pct <= 0D OrElse safeList <= 0D Then
+            Return Decimal.Round(safeList, 4, MidpointRounding.AwayFromZero)
+        End If
+        Dim factor = 1D - (pct / 100D)
+        Return Decimal.Round(safeList * factor, 4, MidpointRounding.AwayFromZero)
+    End Function
+
+    Private Shared Function ClampPercent(value As Decimal) As Decimal
+        If value < 0D Then Return 0D
+        If value > 100D Then Return 100D
+        Return value
+    End Function
 
     Private Function ConsumeNewCustomerId(allowQueryParameter As Boolean) As Integer
         Dim requestedId As Integer
@@ -916,6 +1030,7 @@ Public Class _Default
             Dim request As New CheckoutRequest() With {
                 .DealerId = dealerId,
                 .DealerName = dealerName,
+                .CustomerDefaultDiscountPercent = If(GetSelectedCustomerDefaultDiscountPercent() > 0D, CType(GetSelectedCustomerDefaultDiscountPercent(), Decimal?), Nothing),
                 .PaymentMethod = method,
                 .PaymentAmount = paymentAmount,
                 .PartialAmount = partialAmount,
@@ -1053,14 +1168,17 @@ Public Class _Default
         cart.Clear()
         If detail.Items IsNot Nothing Then
             For Each item In detail.Items
+                Dim listPrice = If(item.ListUnitPrice.HasValue AndAlso item.ListUnitPrice.Value > 0D, item.ListUnitPrice.Value, item.UnitPrice)
                 cart.Add(New CartItem() With {
                     .ProductId = item.ProductId,
                     .SkuCode = item.SkuCode,
                     .Name = item.Name,
+                    .ListUnitPrice = listPrice,
                     .UnitPrice = item.UnitPrice,
                     .Quantity = item.Quantity,
                     .TaxRate = item.TaxRate,
                     .Thumbnail = item.ThumbnailUrl,
+                    .CustomerDefaultDiscountPercentApplied = 0D,
                     .ItemDiscountMode = DiscountModePercent,
                     .ItemDiscountValue = 0D
                 })
@@ -1103,6 +1221,9 @@ Public Class _Default
         End If
         ActiveHeldSaleId = detail.HeldSaleId
         SetSelectedCustomer(detail.DealerId)
+        ' IMPORTANT: restoring a held sale must preserve saved UNIT_PRICE / totals.
+        ' We still refresh the selected customer's default discount percent for later checkout/audit.
+        RefreshSelectedCustomerDefaultDiscountPercent()
         BindCart()
         ShowCartMessage($"Held bill {detail.ReferenceCode} restored into the cart.", True)
         ScriptManager.RegisterStartupScript(Me, Me.GetType(), "HideHeldBillsModal", "PosUI.hideHeldBills();", True)

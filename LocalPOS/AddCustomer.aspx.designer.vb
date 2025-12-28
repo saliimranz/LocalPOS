@@ -55,6 +55,8 @@ Partial Public Class AddCustomer
 
     Protected WithEvents txtSalesTerritory As Global.System.Web.UI.WebControls.TextBox
 
+    Protected WithEvents txtDefaultDiscountPercentage As Global.System.Web.UI.WebControls.TextBox
+
     Protected WithEvents chkActive As Global.System.Web.UI.WebControls.CheckBox
 
     Protected WithEvents chkSmsAlerts As Global.System.Web.UI.WebControls.CheckBox

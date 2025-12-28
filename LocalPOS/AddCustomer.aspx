@@ -73,6 +73,11 @@
                     <label for="txtSalesTerritory">Sales territory code</label>
                     <asp:TextBox runat="server" ID="txtSalesTerritory" CssClass="form-control" TextMode="Number" />
                 </div>
+                <div class="form-group">
+                    <label for="txtDefaultDiscountPercentage">Default Discount %</label>
+                    <asp:TextBox runat="server" ID="txtDefaultDiscountPercentage" CssClass="form-control" />
+                    <small class="text-muted">Optional (0–100). Supports decimals.</small>
+                </div>
             </div>
             <div class="customer-toggle-row">
                 <label class="form-check form-switch">

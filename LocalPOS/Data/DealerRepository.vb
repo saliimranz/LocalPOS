@@ -33,6 +33,7 @@ Namespace LocalPOS.Data
 
             Using connection = CreateConnection()
                 Using command = connection.CreateCommand()
+                    Dim hasDefaultDiscountColumn = ColumnExists(connection, Nothing, "dbo", "TBL_DEALERS", "Default_Discount_Percentage")
                     command.CommandText = "SELECT TOP 1" & vbCrLf &
                                         "    ID," & vbCrLf &
                                         "    DealerName," & vbCrLf &
@@ -64,6 +65,7 @@ Namespace LocalPOS.Data
                                         "    CNO_D AS ContactNumberNotes," & vbCrLf &
                                         "    EM_D AS EmailNotes," & vbCrLf &
                                         "    ST_R AS SalesTerritoryCode," & vbCrLf &
+                                        If(hasDefaultDiscountColumn, "    Default_Discount_Percentage AS DefaultDiscountPercentage," & vbCrLf, String.Empty) &
                                         "    IP_ADDRESS," & vbCrLf &
                                         "    CDATED," & vbCrLf &
                                         "    CellNumbers AS AlternateNumbers," & vbCrLf &
@@ -104,13 +106,16 @@ Namespace LocalPOS.Data
 
             Using connection = CreateConnection()
                 Using command = connection.CreateCommand()
+                    Dim hasDefaultDiscountColumn = ColumnExists(connection, Nothing, "dbo", "TBL_DEALERS", "Default_Discount_Percentage")
+                    Dim defaultDiscountColumns = If(hasDefaultDiscountColumn, ", Default_Discount_Percentage", String.Empty)
+                    Dim defaultDiscountValues = If(hasDefaultDiscountColumn, ", @DefaultDiscountPercentage", String.Empty)
                     command.CommandText = "INSERT INTO dbo.TBL_DEALERS" & vbCrLf &
-                                        "(DealerName, DealerID, DealerOldID, ContactPerson, CNIC, CNICExpiry, Email, Email_customer, Address, City, State, Country, website, Branch, Br_Code, SALES_PERSON, SLSP_ID, Login, Password, TYPED, parentID, Status, SMS_ACT, APP_LOGIN, DEALER_INVST, CNO_D, EM_D, ST_R, IP_ADDRESS, CellNumber, CellNumbers, Phone1, Phone2, Phone3, NTN, STN, CDATED, [Name], ContentType, Data, NameCNIC, ContentTypeCNIC, DataCNIC, NameNTN, ContentTypeNTN, DataNTN, NameLOGO, ContentTypeLOGO, DataLOGO)" & vbCrLf &
+                                        "(DealerName, DealerID, DealerOldID, ContactPerson, CNIC, CNICExpiry, Email, Email_customer, Address, City, State, Country, website, Branch, Br_Code, SALES_PERSON, SLSP_ID, Login, Password, TYPED, parentID, Status, SMS_ACT, APP_LOGIN, DEALER_INVST, CNO_D, EM_D, ST_R, IP_ADDRESS, CellNumber, CellNumbers, Phone1, Phone2, Phone3, NTN, STN, CDATED, [Name], ContentType, Data, NameCNIC, ContentTypeCNIC, DataCNIC, NameNTN, ContentTypeNTN, DataNTN, NameLOGO, ContentTypeLOGO, DataLOGO" & defaultDiscountColumns & ")" & vbCrLf &
                                         "VALUES" & vbCrLf &
-                                        "(@DealerName, @DealerID, @DealerOldID, @ContactPerson, @CNIC, @CNICExpiry, @Email, @CustomerEmail, @Address, @City, @State, @Country, @Website, @Branch, @BranchCode, @SalesPerson, @SalesPersonId, @Login, @Password, @TypeCode, @ParentId, @Status, @SmsAct, @AppLogin, @DealerInvestment, @ContactNotes, @EmailNotes, @SalesTerritory, @IpAddress, @CellNumber, @AlternateNumbers, @Phone1, @Phone2, @Phone3, @NTN, @STN, GETDATE(), @LicenseName, @LicenseContentType, @LicenseData, @CnicDocName, @CnicDocContentType, @CnicDocData, @NtnDocName, @NtnDocContentType, @NtnDocData, @LogoDocName, @LogoDocContentType, @LogoDocData);" & vbCrLf &
+                                        "(@DealerName, @DealerID, @DealerOldID, @ContactPerson, @CNIC, @CNICExpiry, @Email, @CustomerEmail, @Address, @City, @State, @Country, @Website, @Branch, @BranchCode, @SalesPerson, @SalesPersonId, @Login, @Password, @TypeCode, @ParentId, @Status, @SmsAct, @AppLogin, @DealerInvestment, @ContactNotes, @EmailNotes, @SalesTerritory, @IpAddress, @CellNumber, @AlternateNumbers, @Phone1, @Phone2, @Phone3, @NTN, @STN, GETDATE(), @LicenseName, @LicenseContentType, @LicenseData, @CnicDocName, @CnicDocContentType, @CnicDocData, @NtnDocName, @NtnDocContentType, @NtnDocData, @LogoDocName, @LogoDocContentType, @LogoDocData" & defaultDiscountValues & ");" & vbCrLf &
                                         "SELECT CAST(SCOPE_IDENTITY() AS INT);"
 
-                    BindCommonParameters(command, request)
+                    BindCommonParameters(command, request, includeDefaultDiscount:=hasDefaultDiscountColumn)
                     BindDocumentParameters(command, "License", request.TradeLicenseDocument, includeWhenEmpty:=True)
                     BindDocumentParameters(command, "CnicDoc", request.CnicDocument, includeWhenEmpty:=True)
                     BindDocumentParameters(command, "NtnDoc", request.NtnDocument, includeWhenEmpty:=True)
@@ -127,8 +132,9 @@ Namespace LocalPOS.Data
 
             Using connection = CreateConnection()
                 Using command = connection.CreateCommand()
-                    BindCommonParameters(command, request)
-                    Dim assignments = BuildUpdateAssignments(command, request)
+                    Dim hasDefaultDiscountColumn = ColumnExists(connection, Nothing, "dbo", "TBL_DEALERS", "Default_Discount_Percentage")
+                    BindCommonParameters(command, request, includeDefaultDiscount:=hasDefaultDiscountColumn)
+                    Dim assignments = BuildUpdateAssignments(command, request, includeDefaultDiscountColumn:=hasDefaultDiscountColumn)
 
                     Dim builder As New StringBuilder()
                     builder.AppendLine("UPDATE dbo.TBL_DEALERS SET")
@@ -147,7 +153,7 @@ Namespace LocalPOS.Data
             End Using
         End Sub
 
-        Private Shared Function BuildUpdateAssignments(command As SqlCommand, request As DealerUpsertRequest) As List(Of String)
+        Private Shared Function BuildUpdateAssignments(command As SqlCommand, request As DealerUpsertRequest, includeDefaultDiscountColumn As Boolean) As List(Of String)
             Dim assignments As New List(Of String) From {
                 "DealerName = @DealerName",
                 "DealerID = @DealerID",
@@ -186,6 +192,10 @@ Namespace LocalPOS.Data
                 "NTN = @NTN",
                 "STN = @STN"
             }
+
+            If includeDefaultDiscountColumn Then
+                assignments.Add("Default_Discount_Percentage = @DefaultDiscountPercentage")
+            End If
 
             If BindDocumentParameters(command, "License", request.TradeLicenseDocument, includeWhenEmpty:=False) Then
                 assignments.Add("[Name] = @LicenseName")
@@ -253,6 +263,9 @@ Namespace LocalPOS.Data
             dealer.ContactNumberNotes = ReadString(reader, "ContactNumberNotes")
             dealer.EmailNotes = ReadString(reader, "EmailNotes")
             dealer.SalesTerritoryCode = ReadNullableInt(reader, "SalesTerritoryCode")
+            If HasColumn(reader, "DefaultDiscountPercentage") Then
+                dealer.DefaultDiscountPercentage = ReadNullableDecimal(reader, "DefaultDiscountPercentage")
+            End If
             dealer.IpAddress = ReadString(reader, "IP_ADDRESS")
             dealer.CreatedOn = ReadNullableDate(reader, "CDATED")
             dealer.AlternateNumbers = ReadString(reader, "AlternateNumbers")
@@ -284,7 +297,7 @@ Namespace LocalPOS.Data
             Return document
         End Function
 
-        Private Shared Sub BindCommonParameters(command As SqlCommand, request As DealerUpsertRequest)
+        Private Shared Sub BindCommonParameters(command As SqlCommand, request As DealerUpsertRequest, Optional includeDefaultDiscount As Boolean = False)
             command.Parameters.AddWithValue("@DealerName", request.DealerName)
             command.Parameters.AddWithValue("@DealerID", ToDbValue(request.DealerCode))
             command.Parameters.AddWithValue("@DealerOldID", ToDbValue(request.DealerOldCode))
@@ -321,6 +334,10 @@ Namespace LocalPOS.Data
             AddFlag(command, "@SmsAct", request.SmsEnabled)
             AddFlag(command, "@AppLogin", request.AppLoginEnabled)
             command.Parameters.AddWithValue("@IpAddress", ToDbValue(request.IpAddress))
+
+            If includeDefaultDiscount Then
+                AddNullableDecimal(command, "@DefaultDiscountPercentage", request.DefaultDiscountPercentage)
+            End If
         End Sub
 
         Private Shared Function BindDocumentParameters(command As SqlCommand, prefix As String, document As DealerDocument, includeWhenEmpty As Boolean) As Boolean
@@ -347,6 +364,17 @@ Namespace LocalPOS.Data
             Dim parameter = command.Parameters.Add(name, SqlDbType.Int)
             If value.HasValue Then
                 parameter.Value = value.Value
+            Else
+                parameter.Value = DBNull.Value
+            End If
+        End Sub
+
+        Private Shared Sub AddNullableDecimal(command As SqlCommand, name As String, value As Decimal?)
+            Dim parameter = command.Parameters.Add(name, SqlDbType.Decimal)
+            parameter.Precision = 18
+            parameter.Scale = 4
+            If value.HasValue Then
+                parameter.Value = Decimal.Round(value.Value, 4, MidpointRounding.AwayFromZero)
             Else
                 parameter.Value = DBNull.Value
             End If
@@ -435,6 +463,45 @@ Namespace LocalPOS.Data
                 Return Nothing
             End If
             Return reader.GetDateTime(ordinal)
+        End Function
+
+        Private Shared Function ReadNullableDecimal(reader As SqlDataReader, column As String) As Decimal?
+            Dim ordinal = reader.GetOrdinal(column)
+            If reader.IsDBNull(ordinal) Then
+                Return Nothing
+            End If
+            Return Convert.ToDecimal(reader.GetValue(ordinal), CultureInfo.InvariantCulture)
+        End Function
+
+        Private Shared Function HasColumn(reader As IDataRecord, columnName As String) As Boolean
+            If reader Is Nothing OrElse String.IsNullOrWhiteSpace(columnName) Then
+                Return False
+            End If
+
+            For i = 0 To reader.FieldCount - 1
+                If reader.GetName(i).Equals(columnName, StringComparison.OrdinalIgnoreCase) Then
+                    Return True
+                End If
+            Next
+            Return False
+        End Function
+
+        Private Shared Function ColumnExists(connection As SqlConnection, transaction As SqlTransaction, schemaName As String, tableName As String, columnName As String) As Boolean
+            If connection Is Nothing OrElse String.IsNullOrWhiteSpace(schemaName) OrElse String.IsNullOrWhiteSpace(tableName) OrElse String.IsNullOrWhiteSpace(columnName) Then
+                Return False
+            End If
+
+            Using command = connection.CreateCommand()
+                command.Transaction = transaction
+                command.CommandText = "SELECT CASE WHEN COL_LENGTH(@FullName, @ColumnName) IS NULL THEN 0 ELSE 1 END"
+                command.Parameters.AddWithValue("@FullName", $"{schemaName}.{tableName}")
+                command.Parameters.AddWithValue("@ColumnName", columnName)
+                Dim raw = command.ExecuteScalar()
+                If raw Is Nothing OrElse raw Is DBNull.Value Then
+                    Return False
+                End If
+                Return Convert.ToInt32(raw, CultureInfo.InvariantCulture) = 1
+            End Using
         End Function
 
         Private Shared Function ReadFlag(reader As SqlDataReader, column As String) As Boolean

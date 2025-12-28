@@ -94,6 +94,7 @@ Public Class AddCustomer
         txtBranchCode.Text = dealer.BranchCode
         txtDealerInvestment.Text = dealer.DealerInvestment
         txtSalesTerritory.Text = dealer.SalesTerritoryCode?.ToString(CultureInfo.InvariantCulture)
+        txtDefaultDiscountPercentage.Text = If(dealer.DefaultDiscountPercentage.HasValue, dealer.DefaultDiscountPercentage.Value.ToString(CultureInfo.InvariantCulture), String.Empty)
         chkActive.Checked = dealer.StatusActive
         chkSmsAlerts.Checked = dealer.SmsEnabled
         chkAppLogin.Checked = dealer.AppLoginEnabled
@@ -190,6 +191,7 @@ Public Class AddCustomer
         ValidateIntegerField(txtParentId.Text, "Parent account ID", errors)
         ValidateIntegerField(txtSalesPersonId.Text, "Sales person ID", errors)
         ValidateIntegerField(txtSalesTerritory.Text, "Sales territory code", errors)
+        ValidatePercentField(txtDefaultDiscountPercentage.Text, "Default Discount %", errors)
 
         Return errors
     End Function
@@ -219,6 +221,7 @@ Public Class AddCustomer
             .BranchCode = txtBranchCode.Text,
             .DealerInvestment = txtDealerInvestment.Text,
             .SalesTerritoryCode = ParseNullableInt(txtSalesTerritory.Text),
+            .DefaultDiscountPercentage = ParseNullablePercent(txtDefaultDiscountPercentage.Text),
             .StatusActive = chkActive.Checked,
             .SmsEnabled = chkSmsAlerts.Checked,
             .AppLoginEnabled = chkAppLogin.Checked,
@@ -258,6 +261,35 @@ Public Class AddCustomer
         Dim parsed As Integer
         If Integer.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, parsed) Then
             Return parsed
+        End If
+        Return Nothing
+    End Function
+
+    Private Sub ValidatePercentField(input As String, fieldName As String, errors As IList(Of String))
+        If String.IsNullOrWhiteSpace(input) Then
+            Return
+        End If
+
+        Dim parsed As Decimal
+        If Not Decimal.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) Then
+            errors.Add($"{fieldName} must be a valid number.")
+            Return
+        End If
+
+        If parsed < 0D OrElse parsed > 100D Then
+            errors.Add($"{fieldName} must be between 0 and 100.")
+        End If
+    End Sub
+
+    Private Function ParseNullablePercent(input As String) As Decimal?
+        If String.IsNullOrWhiteSpace(input) Then
+            Return Nothing
+        End If
+
+        Dim parsed As Decimal
+        If Decimal.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, parsed) Then
+            parsed = Math.Min(Math.Max(parsed, 0D), 100D)
+            Return Decimal.Round(parsed, 4, MidpointRounding.AwayFromZero)
         End If
         Return Nothing
     End Function

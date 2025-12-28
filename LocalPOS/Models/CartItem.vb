@@ -8,10 +8,22 @@ Namespace LocalPOS.Models
         Public Property ProductId As Integer
         Public Property SkuCode As String
         Public Property Name As String
+        ''' <summary>
+        ''' Baseline/unit list price for this cart line (before customer default discount).
+        '''
+        ''' IMPORTANT:
+        ''' Customer default discount is implemented as a base-price layer (effective UnitPrice),
+        ''' not as a PricingEngine discount intent. This baseline prevents compounding when
+        ''' switching customers (reprice from ListUnitPrice each time).
+        ''' </summary>
+        Public Property ListUnitPrice As Decimal
         Public Property UnitPrice As Decimal
         Public Property Quantity As Integer
         Public Property TaxRate As Decimal
         Public Property Thumbnail As String
+
+        ' Optional (debug/audit): last applied customer default discount percent.
+        Public Property CustomerDefaultDiscountPercentApplied As Decimal
 
         ' Phase 1: optional manual item-level discount input (UI).
         ' Stored only in-session / held-sale intent records (not persisted as part of the SKU).

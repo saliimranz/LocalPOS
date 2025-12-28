@@ -39,6 +39,7 @@ Namespace LocalPOS.Data
                         Dim orderId = InsertOrder(connection, transaction, request, orderNumber, inquiryNo, outstanding)
                         InsertOrderItems(connection, transaction, orderId, cartItems, pricing.Lines, request.TaxPercent)
                         PersistDiscounts(connection, transaction, orderId, pricing, request.CreatedBy)
+                        PersistCustomerDefaultDiscounts(connection, transaction, orderId, request.CustomerDefaultDiscountPercent, cartItems, request.CreatedBy)
                         Dim paymentNotes = BuildPaymentNotes(request, outstanding, pricing)
                         InsertPayment(connection, transaction, orderId, paymentReference, request.PaymentMethod, paidAmount, outstanding, request.CreatedBy, paymentNotes)
                         transaction.Commit()
@@ -342,6 +343,93 @@ WHERE ID = @SkuId"
                     End If
                     subtotalApplicationIndex += 1
                 End If
+            Next
+        End Sub
+
+        Private Shared Sub PersistCustomerDefaultDiscounts(connection As SqlConnection,
+                                                          transaction As SqlTransaction,
+                                                          orderId As Integer,
+                                                          customerDefaultDiscountPercent As Decimal?,
+                                                          cartItems As IList(Of CartItem),
+                                                          createdBy As String)
+            If connection Is Nothing OrElse orderId <= 0 OrElse cartItems Is Nothing OrElse cartItems.Count = 0 Then
+                Return
+            End If
+
+            If Not customerDefaultDiscountPercent.HasValue Then
+                Return
+            End If
+
+            Dim pct = ClampPercent(customerDefaultDiscountPercent.Value)
+            If pct <= 0D Then
+                Return
+            End If
+
+            Dim hasDiscountTable = TableExists(connection, transaction, "dbo", "TBL_POS_DISCOUNT")
+            If Not hasDiscountTable Then
+                Return
+            End If
+
+            For Each item In cartItems
+                If item Is Nothing OrElse item.ProductId <= 0 OrElse item.Quantity <= 0 Then
+                    Continue For
+                End If
+
+                Dim listUnit = If(item.ListUnitPrice > 0D, item.ListUnitPrice, item.UnitPrice)
+                Dim listGross = Decimal.Round(Math.Max(0D, listUnit * item.Quantity), 2, MidpointRounding.AwayFromZero)
+                Dim effectiveGross = Decimal.Round(Math.Max(0D, item.UnitPrice * item.Quantity), 2, MidpointRounding.AwayFromZero)
+                Dim appliedAmount = Decimal.Round(Math.Max(0D, listGross - effectiveGross), 2, MidpointRounding.AwayFromZero)
+
+                If appliedAmount <= 0D OrElse listGross <= 0D Then
+                    Continue For
+                End If
+
+                Using command = connection.CreateCommand()
+                    command.Transaction = transaction
+                    command.CommandText =
+"INSERT INTO dbo.TBL_POS_DISCOUNT
+(
+    ORDER_ID,
+    PRODUCT_ID,
+    SCOPE,
+    VALUE_TYPE,
+    VALUE,
+    APPLIED_BASE_AMOUNT,
+    APPLIED_AMOUNT,
+    SOURCE,
+    REFERENCE,
+    DESCRIPTION,
+    PRIORITY,
+    IS_STACKABLE,
+    CREATED_BY
+)
+VALUES
+(
+    @OrderId,
+    @ProductId,
+    'ITEM',
+    'PERCENT',
+    @Value,
+    @AppliedBase,
+    @AppliedAmount,
+    'CustomerDefault',
+    @Reference,
+    @Description,
+    @Priority,
+    1,
+    @CreatedBy
+)"
+                    command.Parameters.AddWithValue("@OrderId", orderId)
+                    command.Parameters.AddWithValue("@ProductId", item.ProductId)
+                    command.Parameters.AddWithValue("@Value", Decimal.Round(pct, 4, MidpointRounding.AwayFromZero))
+                    command.Parameters.AddWithValue("@AppliedBase", listGross)
+                    command.Parameters.AddWithValue("@AppliedAmount", appliedAmount)
+                    command.Parameters.AddWithValue("@Reference", CType(DBNull.Value, Object))
+                    command.Parameters.AddWithValue("@Description", "Customer default discount")
+                    command.Parameters.AddWithValue("@Priority", 9999)
+                    command.Parameters.AddWithValue("@CreatedBy", ToDbValue(createdBy))
+                    command.ExecuteNonQuery()
+                End Using
             Next
         End Sub
 
@@ -1749,7 +1837,8 @@ ORDER BY CREATED_ON DESC, ID DESC"
         Private Shared Function LoadDiscountBreakdown(connection As SqlConnection,
                                                      transaction As SqlTransaction,
                                                      orderId As Integer,
-                                                     lineItems As IList(Of OrderLineItem)) As DiscountBreakdown
+                                                     lineItems As IList(Of OrderLineItem),
+                                                     Optional includeCustomerDefault As Boolean = False) As DiscountBreakdown
             Dim breakdown As New DiscountBreakdown()
             If orderId <= 0 Then
                 Return breakdown
@@ -1789,6 +1878,7 @@ ORDER BY CREATED_ON DESC, ID DESC"
 
             Using command = connection.CreateCommand()
                 command.Transaction = transaction
+                Dim whereFilter = If(includeCustomerDefault, String.Empty, " AND ISNULL(SOURCE, '') <> 'CustomerDefault'")
                 command.CommandText =
 "SELECT
     ISNULL(SCOPE, '') AS SCOPE,
@@ -1803,7 +1893,7 @@ ORDER BY CREATED_ON DESC, ID DESC"
     ISNULL(IS_STACKABLE, 1) AS IS_STACKABLE,
     ISNULL(PRODUCT_ID, 0) AS PRODUCT_ID
 FROM dbo.TBL_POS_DISCOUNT
-WHERE ORDER_ID = @OrderId
+WHERE ORDER_ID = @OrderId" & whereFilter & "
 ORDER BY ID ASC"
                 command.Parameters.AddWithValue("@OrderId", orderId)
 

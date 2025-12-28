@@ -2,6 +2,8 @@ Namespace LocalPOS.Models
     Public Class CheckoutRequest
         Public Property DealerId As Integer
         Public Property DealerName As String
+        ' Customer default discount percent (0-100). Used for audit-only discount intents (hidden on receipts/invoices).
+        Public Property CustomerDefaultDiscountPercent As Decimal?
         Public Property PaymentMethod As String
         Public Property PartialAmount As Decimal?
         Public Property CorporatePaymentType As String

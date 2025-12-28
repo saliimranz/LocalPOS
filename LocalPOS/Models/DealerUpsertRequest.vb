@@ -56,6 +56,7 @@ Namespace LocalPOS.Models
         Public Property Phone3 As String
         Public Property Ntn As String
         Public Property Stn As String
+        Public Property DefaultDiscountPercentage As Decimal?
         Public Property IpAddress As String
 
         Public Property TradeLicenseDocument As DealerDocument
