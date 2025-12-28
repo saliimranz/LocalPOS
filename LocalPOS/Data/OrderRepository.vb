@@ -1076,25 +1076,28 @@ WHERE ID = @OrderId"
                 End Using
 
                 PopulateLineItems(connection, orders)
-                For Each order In orders
-                    Dim note As String = Nothing
-                    notesLookup.TryGetValue(order.OrderId, note)
-                    Dim parsedNotes = ParsePaymentNotes(note)
-
-                    Dim breakdown = LoadDiscountBreakdown(connection, Nothing, order.OrderId, order.LineItems)
-                    Dim financials = CalculateFinancialsV2(order.LineItems, parsedNotes, order.TotalAmount, breakdown)
-
-                    order.Subtotal = financials.Subtotal
-                    order.ItemDiscountAmount = financials.ItemDiscountAmount
-                    order.SubtotalDiscountAmount = financials.SubtotalDiscountAmount
-                    order.DiscountAmount = financials.TotalDiscountAmount
-                    order.DiscountPercent = financials.DiscountPercent
-                    order.TaxPercent = financials.TaxPercent
-                    order.TaxAmount = financials.TaxAmount
-                    order.TotalAmount = financials.TotalAmount
-                    order.Discounts = breakdown.Discounts
-                Next
             End Using
+
+            ' Keep Sales History resilient: do not depend on discount breakdown tables here.
+            ' (This matches the simpler behavior from the working search_issue implementation.)
+            For Each order In orders
+                Dim note As String = Nothing
+                notesLookup.TryGetValue(order.OrderId, note)
+                Dim parsedNotes = ParsePaymentNotes(note)
+
+                Dim financials = CalculateFinancials(order.LineItems, parsedNotes, order.TotalAmount)
+                order.Subtotal = financials.Subtotal
+                order.DiscountAmount = financials.DiscountAmount
+                order.DiscountPercent = financials.DiscountPercent
+                order.TaxPercent = financials.TaxPercent
+                order.TaxAmount = financials.TaxAmount
+                order.TotalAmount = financials.TotalAmount
+
+                ' New fields remain unset (defaults) for Sales History.
+                order.ItemDiscountAmount = 0D
+                order.SubtotalDiscountAmount = 0D
+                order.Discounts = Nothing
+            Next
 
             Return orders
         End Function
