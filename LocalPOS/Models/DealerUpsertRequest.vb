@@ -58,6 +58,11 @@ Namespace LocalPOS.Models
         Public Property Stn As String
         Public Property IpAddress As String
 
+        ''' <summary>
+        ''' Optional customer default discount percentage (0-100).
+        ''' </summary>
+        Public Property DefaultDiscountPercentage As Decimal?
+
         Public Property TradeLicenseDocument As DealerDocument
         Public Property CnicDocument As DealerDocument
         Public Property NtnDocument As DealerDocument

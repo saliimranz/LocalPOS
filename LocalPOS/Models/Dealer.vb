@@ -46,6 +46,12 @@ Namespace LocalPOS.Models
         Public Property IpAddress As String
         Public Property CreatedOn As Date?
 
+        ''' <summary>
+        ''' Optional customer default discount percentage (0-100). When present, POS uses it
+        ''' as a base price adjustment before applying other discounts.
+        ''' </summary>
+        Public Property DefaultDiscountPercentage As Decimal?
+
         Public Property TradeLicenseDocument As DealerDocument
         Public Property CnicDocument As DealerDocument
         Public Property NtnDocument As DealerDocument

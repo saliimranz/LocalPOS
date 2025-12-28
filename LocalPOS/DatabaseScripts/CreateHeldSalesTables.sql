@@ -34,6 +34,8 @@ BEGIN
         PRODUCT_ID    INT            NOT NULL,
         SKU_CODE      NVARCHAR(80)   NULL,
         ITEM_NAME     NVARCHAR(200)  NOT NULL,
+        -- LIST_UNIT_PRICE is the pre-customer-default baseline (optional for legacy held sales).
+        LIST_UNIT_PRICE DECIMAL(18,4) NULL,
         UNIT_PRICE    DECIMAL(18,2)  NOT NULL,
         QUANTITY      INT            NOT NULL,
         TAX_RATE      DECIMAL(9,4)   NOT NULL CONSTRAINT DF_POS_HELD_ITEM_TAX DEFAULT (0),
@@ -47,4 +49,14 @@ END
 ELSE
 BEGIN
     PRINT 'TBL_POS_HELD_SALE_ITEM already exists; skipping create.';
+END;
+
+-- Backfill schema when upgrading existing databases.
+IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'TBL_POS_HELD_SALE_ITEM' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    IF COL_LENGTH('dbo.TBL_POS_HELD_SALE_ITEM', 'LIST_UNIT_PRICE') IS NULL
+    BEGIN
+        ALTER TABLE dbo.TBL_POS_HELD_SALE_ITEM
+            ADD LIST_UNIT_PRICE DECIMAL(18,4) NULL;
+    END
 END;

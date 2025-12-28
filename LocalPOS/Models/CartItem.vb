@@ -8,7 +8,17 @@ Namespace LocalPOS.Models
         Public Property ProductId As Integer
         Public Property SkuCode As String
         Public Property Name As String
+        ''' <summary>
+        ''' List/original unit price before applying customer default discount.
+        ''' Used to avoid compounding when the selected customer changes.
+        ''' </summary>
+        Public Property ListUnitPrice As Decimal
         Public Property UnitPrice As Decimal
+        ''' <summary>
+        ''' The customer default discount percent used to compute UnitPrice from ListUnitPrice.
+        ''' Stored for audit persistence at checkout and debugging.
+        ''' </summary>
+        Public Property CustomerDefaultDiscountPercentApplied As Decimal
         Public Property Quantity As Integer
         Public Property TaxRate As Decimal
         Public Property Thumbnail As String
