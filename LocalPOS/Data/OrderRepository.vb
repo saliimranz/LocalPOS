@@ -1131,49 +1131,72 @@ WHERE ID = @OrderId"
                 End Using
 
                 PopulateLineItems(connection, orders)
-                ' IMPORTANT:
-                ' - New orders: use the new discount tables (TBL_POS_DISCOUNT / TBL_POS_DISCOUNT_ALLOCATION).
-                ' - Old orders (pre-discount-system): fall back to legacy reconstruction (search_issue behavior).
+                ' Performance: Sales History does not compute discounts. (Avoids N+1 queries + legacy reconstruction.)
                 For Each order In orders
                     Dim note As String = Nothing
                     notesLookup.TryGetValue(order.OrderId, note)
                     Dim parsedNotes = ParsePaymentNotes(note)
 
-                    Dim hasDiscountRecords = HasDiscountRecordsForOrder(connection, Nothing, order.OrderId)
-                    If hasDiscountRecords Then
-                        Dim breakdown = LoadDiscountBreakdown(connection, Nothing, order.OrderId, order.LineItems)
-                        Dim financials = CalculateFinancialsV2(order.LineItems, parsedNotes, order.TotalAmount, breakdown)
+                    Dim financials = CalculateFinancialsNoDiscount(order.LineItems, parsedNotes, order.TotalAmount)
+                    order.Subtotal = financials.Subtotal
+                    order.TaxPercent = financials.TaxPercent
+                    order.TaxAmount = financials.TaxAmount
+                    order.TotalAmount = financials.TotalAmount
 
-                        order.Subtotal = financials.Subtotal
-                        order.ItemDiscountAmount = financials.ItemDiscountAmount
-                        order.SubtotalDiscountAmount = financials.SubtotalDiscountAmount
-                        order.DiscountAmount = financials.TotalDiscountAmount
-                        order.DiscountPercent = financials.DiscountPercent
-                        order.TaxPercent = financials.TaxPercent
-                        order.TaxAmount = financials.TaxAmount
-                        order.TotalAmount = financials.TotalAmount
-                        order.Discounts = breakdown.Discounts
-                    Else
-                        ' Legacy reconstruction:
-                        ' Discount = (Subtotal + Tax) - FinalTotal
-                        ' where FinalTotal is order.TP (and/or Total:... in NOTES), matching search_issue.
-                        Dim financials = CalculateFinancials(order.LineItems, parsedNotes, order.TotalAmount)
-
-                        order.Subtotal = financials.Subtotal
-                        order.DiscountAmount = financials.TotalDiscountAmount
-                        order.DiscountPercent = financials.DiscountPercent
-                        order.TaxPercent = financials.TaxPercent
-                        order.TaxAmount = financials.TaxAmount
-                        order.TotalAmount = financials.TotalAmount
-
-                        order.ItemDiscountAmount = 0D
-                        order.SubtotalDiscountAmount = 0D
-                        order.Discounts = Nothing
-                    End If
+                    order.DiscountAmount = 0D
+                    order.DiscountPercent = 0D
+                    order.ItemDiscountAmount = 0D
+                    order.SubtotalDiscountAmount = 0D
+                    order.Discounts = Nothing
                 Next
             End Using
 
             Return orders
+        End Function
+
+        Private Shared Function CalculateFinancialsNoDiscount(lineItems As IList(Of OrderLineItem),
+                                                             notes As IDictionary(Of String, String),
+                                                             fallbackTotal As Decimal) As OrderFinancials
+            Dim subtotalGross = If(lineItems IsNot Nothing AndAlso lineItems.Count > 0, lineItems.Sum(Function(i) Math.Max(0D, i.LineTotal)), 0D)
+            subtotalGross = Decimal.Round(Math.Max(0D, subtotalGross), 2, MidpointRounding.AwayFromZero)
+
+            Dim totalFromNotes = GetNoteDecimal(notes, "Total")
+            Dim vatPercent = GetNoteDecimal(notes, "VAT")
+
+            Dim totalDue = If(totalFromNotes > 0D, totalFromNotes, fallbackTotal)
+            If totalDue <= 0D Then
+                totalDue = subtotalGross
+            End If
+            totalDue = Decimal.Round(Math.Max(0D, totalDue), 2, MidpointRounding.AwayFromZero)
+
+            ' Prefer recorded line-level tax if present; otherwise infer from VAT% in notes.
+            Dim lineTax = If(lineItems IsNot Nothing AndAlso lineItems.Count > 0, lineItems.Sum(Function(i) Math.Max(0D, i.TaxAmount)), 0D)
+            lineTax = Decimal.Round(Math.Max(0D, lineTax), 2, MidpointRounding.AwayFromZero)
+
+            Dim taxAmount = lineTax
+            If taxAmount <= 0D AndAlso vatPercent > 0D AndAlso totalDue > 0D Then
+                Dim divisor = 1D + (vatPercent / 100D)
+                Dim taxableBase = If(divisor = 0D, totalDue, Decimal.Round(totalDue / divisor, 2, MidpointRounding.AwayFromZero))
+                taxAmount = Decimal.Round(Math.Max(0D, totalDue - taxableBase), 2, MidpointRounding.AwayFromZero)
+            End If
+
+            If vatPercent <= 0D Then
+                Dim baseAmount = Math.Max(0D, totalDue - taxAmount)
+                If baseAmount > 0D AndAlso taxAmount > 0D Then
+                    vatPercent = Decimal.Round((taxAmount / baseAmount) * 100D, 2, MidpointRounding.AwayFromZero)
+                End If
+            End If
+
+            Return New OrderFinancials() With {
+                .Subtotal = subtotalGross,
+                .ItemDiscountAmount = 0D,
+                .SubtotalDiscountAmount = 0D,
+                .TotalDiscountAmount = 0D,
+                .DiscountPercent = 0D,
+                .TaxPercent = vatPercent,
+                .TaxAmount = taxAmount,
+                .TotalAmount = totalDue
+            }
         End Function
 
         Public Function GetOrderReceipt(orderId As Integer) As OrderReceiptData

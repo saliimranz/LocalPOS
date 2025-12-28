@@ -152,11 +152,6 @@
                                     <strong><%# FormatCurrency(Eval("Subtotal")) %></strong>
                                 </div>
                                 <div>
-                                    <span class="label text-muted">Discount</span>
-                                    <strong><%# FormatCurrency(Eval("DiscountAmount")) %></strong>
-                                    <small class="text-muted d-block"><%# Eval("DiscountPercent", "{0:N2}") %>%</small>
-                                </div>
-                                <div>
                                     <span class="label text-muted">Tax (<%# Eval("TaxPercent", "{0:N2}") %>%)</span>
                                     <strong><%# FormatCurrency(Eval("TaxAmount")) %></strong>
                                 </div>
