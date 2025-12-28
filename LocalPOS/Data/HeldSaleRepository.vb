@@ -1,4 +1,4 @@
-﻿Imports System
+Imports System
 Imports System.Collections.Generic
 Imports System.Data.SqlClient
 Imports System.Linq
@@ -23,9 +23,11 @@ Namespace LocalPOS.Data
                             UpdateHeldSaleHeader(connection, transaction, heldSaleId, request, False)
                             DeleteHeldSaleItems(connection, transaction, heldSaleId)
                             InsertHeldSaleItems(connection, transaction, heldSaleId, request.Items)
+                            PersistHeldSaleDiscounts(connection, transaction, heldSaleId, request.Discounts, request.CreatedBy)
                         Else
                             heldSaleId = InsertHeldSale(connection, transaction, request)
                             InsertHeldSaleItems(connection, transaction, heldSaleId, request.Items)
+                            PersistHeldSaleDiscounts(connection, transaction, heldSaleId, request.Discounts, request.CreatedBy)
                         End If
 
                         transaction.Commit()
@@ -115,14 +117,176 @@ WHERE hs.ID = @Id"
                             .TotalAmount = reader.GetDecimal(reader.GetOrdinal("TOTAL_AMOUNT")),
                             .CreatedOn = reader.GetDateTime(reader.GetOrdinal("CREATED_ON")),
                             .CreatedBy = reader.GetString(reader.GetOrdinal("CREATED_BY")),
-                            .Items = New List(Of HeldSaleItem)()
+                            .Items = New List(Of HeldSaleItem)(),
+                            .Discounts = New List(Of CheckoutDiscount)()
                         }
 
                         reader.Close()
                         FillHeldSaleItems(connection, heldSaleId, CType(detail.Items, List(Of HeldSaleItem)))
+                        detail.Discounts = LoadHeldSaleDiscounts(connection, Nothing, heldSaleId, detail)
                         Return detail
                     End Using
                 End Using
+            End Using
+        End Function
+
+        Private Shared Sub PersistHeldSaleDiscounts(connection As SqlConnection,
+                                                   transaction As SqlTransaction,
+                                                   heldSaleId As Integer,
+                                                   discounts As IList(Of CheckoutDiscount),
+                                                   createdBy As String)
+            If heldSaleId <= 0 OrElse connection Is Nothing Then
+                Return
+            End If
+
+            If Not TableExists(connection, transaction, "dbo", "TBL_POS_HELD_SALE_DISCOUNT") Then
+                Return
+            End If
+
+            ' Replace-all for simplicity (held sale is mutable draft state).
+            Using deleteCmd = connection.CreateCommand()
+                deleteCmd.Transaction = transaction
+                deleteCmd.CommandText = "DELETE FROM dbo.TBL_POS_HELD_SALE_DISCOUNT WHERE HELD_SALE_ID = @Id"
+                deleteCmd.Parameters.AddWithValue("@Id", heldSaleId)
+                deleteCmd.ExecuteNonQuery()
+            End Using
+
+            If discounts Is Nothing OrElse discounts.Count = 0 Then
+                Return
+            End If
+
+            For Each d In discounts
+                If d Is Nothing OrElse String.IsNullOrWhiteSpace(d.Scope) OrElse String.IsNullOrWhiteSpace(d.ValueType) Then
+                    Continue For
+                End If
+
+                Using insertCmd = connection.CreateCommand()
+                    insertCmd.Transaction = transaction
+                    insertCmd.CommandText =
+"INSERT INTO dbo.TBL_POS_HELD_SALE_DISCOUNT
+(
+    HELD_SALE_ID,
+    PRODUCT_ID,
+    SCOPE,
+    VALUE_TYPE,
+    VALUE,
+    SOURCE,
+    REFERENCE,
+    DESCRIPTION,
+    PRIORITY,
+    IS_STACKABLE,
+    CREATED_BY
+)
+VALUES
+(
+    @HeldSaleId,
+    @ProductId,
+    @Scope,
+    @ValueType,
+    @Value,
+    @Source,
+    @Reference,
+    @Description,
+    @Priority,
+    @IsStackable,
+    @CreatedBy
+)"
+                    insertCmd.Parameters.AddWithValue("@HeldSaleId", heldSaleId)
+                    If d.TargetProductId.HasValue AndAlso d.TargetProductId.Value > 0 Then
+                        insertCmd.Parameters.AddWithValue("@ProductId", d.TargetProductId.Value)
+                    Else
+                        insertCmd.Parameters.AddWithValue("@ProductId", CType(DBNull.Value, Object))
+                    End If
+                    insertCmd.Parameters.AddWithValue("@Scope", d.Scope.Trim().ToUpperInvariant())
+                    insertCmd.Parameters.AddWithValue("@ValueType", d.ValueType.Trim().ToUpperInvariant())
+                    insertCmd.Parameters.AddWithValue("@Value", Decimal.Round(Math.Max(0D, d.Value), 4, MidpointRounding.AwayFromZero))
+                    insertCmd.Parameters.AddWithValue("@Source", If(String.IsNullOrWhiteSpace(d.Source), "Unknown", d.Source.Trim()))
+                    insertCmd.Parameters.AddWithValue("@Reference", ToDbValue(d.Reference))
+                    insertCmd.Parameters.AddWithValue("@Description", ToDbValue(d.Description))
+                    insertCmd.Parameters.AddWithValue("@Priority", d.Priority)
+                    insertCmd.Parameters.AddWithValue("@IsStackable", d.IsStackable)
+                    insertCmd.Parameters.AddWithValue("@CreatedBy", ToDbValue(createdBy))
+                    insertCmd.ExecuteNonQuery()
+                End Using
+            Next
+        End Sub
+
+        Private Shared Function LoadHeldSaleDiscounts(connection As SqlConnection,
+                                                    transaction As SqlTransaction,
+                                                    heldSaleId As Integer,
+                                                    fallback As HeldSaleDetail) As IList(Of CheckoutDiscount)
+            Dim results As New List(Of CheckoutDiscount)()
+            If heldSaleId <= 0 OrElse connection Is Nothing Then
+                Return results
+            End If
+
+            If TableExists(connection, transaction, "dbo", "TBL_POS_HELD_SALE_DISCOUNT") Then
+                Using command = connection.CreateCommand()
+                    command.Transaction = transaction
+                    command.CommandText =
+"SELECT
+    ISNULL(SCOPE, '') AS SCOPE,
+    ISNULL(VALUE_TYPE, '') AS VALUE_TYPE,
+    ISNULL(VALUE, 0) AS VALUE,
+    ISNULL(SOURCE, '') AS SOURCE,
+    ISNULL(REFERENCE, '') AS REFERENCE,
+    ISNULL(DESCRIPTION, '') AS DESCRIPTION,
+    ISNULL(PRIORITY, 0) AS PRIORITY,
+    ISNULL(IS_STACKABLE, 1) AS IS_STACKABLE,
+    ISNULL(PRODUCT_ID, 0) AS PRODUCT_ID
+FROM dbo.TBL_POS_HELD_SALE_DISCOUNT
+WHERE HELD_SALE_ID = @Id
+ORDER BY ID ASC"
+                    command.Parameters.AddWithValue("@Id", heldSaleId)
+                    Using reader = command.ExecuteReader()
+                        While reader.Read()
+                            Dim productId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID"))
+                            Dim discount As New CheckoutDiscount() With {
+                                .Scope = reader.GetString(reader.GetOrdinal("SCOPE")),
+                                .ValueType = reader.GetString(reader.GetOrdinal("VALUE_TYPE")),
+                                .Value = reader.GetDecimal(reader.GetOrdinal("VALUE")),
+                                .Source = reader.GetString(reader.GetOrdinal("SOURCE")),
+                                .Reference = reader.GetString(reader.GetOrdinal("REFERENCE")),
+                                .Description = reader.GetString(reader.GetOrdinal("DESCRIPTION")),
+                                .Priority = reader.GetInt32(reader.GetOrdinal("PRIORITY")),
+                                .IsStackable = reader.GetBoolean(reader.GetOrdinal("IS_STACKABLE"))
+                            }
+                            If productId > 0 Then
+                                discount.TargetProductId = productId
+                            End If
+                            results.Add(discount)
+                        End While
+                    End Using
+                End Using
+            End If
+
+            If results.Count = 0 AndAlso fallback IsNot Nothing AndAlso fallback.DiscountPercent > 0D Then
+                ' Backwards compatibility with legacy held sale header columns.
+                results.Add(New CheckoutDiscount() With {
+                    .Scope = "SUBTOTAL",
+                    .ValueType = "PERCENT",
+                    .Value = fallback.DiscountPercent,
+                    .Source = "Legacy",
+                    .Reference = String.Empty,
+                    .Description = "Legacy cart discount",
+                    .Priority = 0,
+                    .IsStackable = True
+                })
+            End If
+
+            Return results
+        End Function
+
+        Private Shared Function TableExists(connection As SqlConnection, transaction As SqlTransaction, schemaName As String, tableName As String) As Boolean
+            Using command = connection.CreateCommand()
+                command.Transaction = transaction
+                command.CommandText = "SELECT CASE WHEN OBJECT_ID(@FullName, 'U') IS NULL THEN 0 ELSE 1 END"
+                command.Parameters.AddWithValue("@FullName", $"{schemaName}.{tableName}")
+                Dim raw = command.ExecuteScalar()
+                If raw Is Nothing OrElse raw Is DBNull.Value Then
+                    Return False
+                End If
+                Return Convert.ToInt32(raw) = 1
             End Using
         End Function
 

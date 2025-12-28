@@ -149,7 +149,7 @@
 
 .pos-content {
     display: grid;
-    grid-template-columns: 3fr 1.1fr;
+    grid-template-columns: minmax(0, 3fr) minmax(420px, 1.1fr);
     gap: 32px;
     padding: 32px;
 }
@@ -368,8 +368,15 @@
 }
 
 .cart-item {
-    display: flex;
-    gap: 12px;
+    /* Force grid layout so discount row can't sit inline with price */
+    display: grid !important;
+    grid-template-columns: 48px minmax(0, 1fr) max-content max-content max-content;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+        "img meta price qty remove"
+        "img . discount discount discount";
+    column-gap: 12px;
+    row-gap: 8px;
     background: #fff;
     border-radius: 18px;
     padding: 12px;
@@ -381,10 +388,98 @@
     height: 48px;
     border-radius: 14px;
     object-fit: cover;
+    grid-area: img;
+    align-self: start;
 }
 
 .cart-item .meta {
     flex: 1;
+    min-width: 0;
+    grid-area: meta;
+}
+
+.cart-item-price {
+    grid-area: price;
+    margin-right: 0 !important;
+    white-space: nowrap;
+}
+
+.cart-item .qty-controls {
+    grid-area: qty;
+}
+
+.cart-item .btn-remove-item {
+    grid-area: remove;
+    justify-self: end;
+}
+
+.item-discount-controls {
+    /* Place discount inputs under price/qty area (right side) */
+    grid-area: discount;
+    width: min(420px, 100%);
+    display: grid;
+    grid-template-columns: minmax(70px, 100px) minmax(30px, 60px);
+    gap: 8px;
+    align-items: center;
+    justify-self: start;
+}
+
+.item-discount-controls .form-select,
+.item-discount-controls select {
+    min-width: 120px;
+    max-width: 100%;
+}
+
+.item-discount-controls .form-control,
+.item-discount-controls input {
+    min-width: 90px;
+    max-width: 100%;
+}
+
+@media (max-width: 520px) {
+    .cart-item {
+        /* Force grid layout on narrow screens too */
+        display: grid !important;
+        grid-template-columns: 48px minmax(0, 1fr) max-content;
+        grid-template-rows: auto auto auto auto;
+        grid-template-areas:
+            "img meta meta"
+            "img price price"
+            "img qty remove"
+            "img discount discount";
+        align-items: start;
+    }
+
+    .cart-item img {
+        align-self: start;
+    }
+
+    .cart-item-price {
+        text-align: left !important;
+        white-space: normal;
+    }
+
+    .cart-item .qty-controls {
+        justify-self: start;
+    }
+
+    .cart-item .btn-remove-item {
+        justify-self: end;
+    }
+
+    .item-discount-controls {
+        grid-template-columns: 1fr;
+        width: 100%;
+        justify-self: stretch;
+    }
+
+    .item-discount-controls .form-select,
+    .item-discount-controls select,
+    .item-discount-controls .form-control,
+    .item-discount-controls input {
+        min-width: 0;
+        width: 100%;
+    }
 }
 
 .cart-item .qty-controls {
