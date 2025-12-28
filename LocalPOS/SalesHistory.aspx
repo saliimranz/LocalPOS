@@ -25,7 +25,8 @@
         <asp:UpdatePanel runat="server" ID="upSalesHistory" UpdateMode="Conditional" ChildrenAsTriggers="true">
             <Triggers>
                 <asp:AsyncPostBackTrigger ControlID="ddlDateRange" EventName="SelectedIndexChanged" />
-                <asp:AsyncPostBackTrigger ControlID="btnApplyFilters" EventName="Click" />
+                <%-- Force full postback for Apply to avoid silent MS AJAX failures. --%>
+                <asp:PostBackTrigger ControlID="btnApplyFilters" />
             </Triggers>
             <ContentTemplate>
                 <div class="history-filters card mb-4">
@@ -52,7 +53,7 @@
                                 <asp:TextBox runat="server" ID="txtOrderSearch" CssClass="form-control" placeholder="eg. POS-2025..."></asp:TextBox>
                             </div>
                             <div class="col-md-1 d-grid">
-                                <asp:Button runat="server" ID="btnApplyFilters" CssClass="btn btn-primary" Text="Apply" OnClick="btnApplyFilters_Click" UseSubmitBehavior="false" />
+                                <asp:Button runat="server" ID="btnApplyFilters" CssClass="btn btn-primary" Text="Apply" OnClick="btnApplyFilters_Click" />
                             </div>
                         </div>
                         <asp:Label runat="server" ID="lblFilterMessage" CssClass="text-danger small d-block mt-2"></asp:Label>
