@@ -379,7 +379,7 @@
     row-gap: 8px;
     background: #fff;
     border-radius: 18px;
-    padding: 12px;
+    padding: 10px;
     align-items: center;
 }
 
@@ -398,10 +398,24 @@
     grid-area: meta;
 }
 
+.cart-item .meta strong {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #1b143f;
+}
+
 .cart-item-price {
     grid-area: price;
     margin-right: 0 !important;
     white-space: nowrap;
+}
+
+.cart-item-price .fw-bold {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
 }
 
 .cart-item .qty-controls {
@@ -422,6 +436,11 @@
     gap: 8px;
     align-items: center;
     justify-self: start;
+}
+
+.item-discount-controls .form-select,
+.item-discount-controls .form-control {
+    font-size: 12px;
 }
 
 .item-discount-controls .form-select,

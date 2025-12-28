@@ -496,6 +496,16 @@ Public Class _Default
         Return ResolveUrl("~/ProductDetails.aspx")
     End Function
 
+    Protected Function GetCatalogUnitPrice(unitPrice As Object) As String
+        Dim parsed As Decimal = 0D
+        If unitPrice IsNot Nothing AndAlso unitPrice IsNot DBNull.Value Then
+            Decimal.TryParse(unitPrice.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, parsed)
+        End If
+
+        Dim effective = ApplyCustomerDefaultDiscount(parsed, GetSelectedCustomerDefaultDiscountPercent())
+        Return effective.ToString("C", CultureInfo.CurrentCulture)
+    End Function
+
     Protected Function IsLowStock(stockObj As Object, thresholdObj As Object) As Boolean
         Dim stock = ConvertToInt(stockObj)
         Dim threshold = ConvertToInt(thresholdObj)
