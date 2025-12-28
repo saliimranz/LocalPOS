@@ -35,6 +35,7 @@ Public Class SalesHistory
 
     Protected Sub btnApplyFilters_Click(sender As Object, e As EventArgs)
         BindSales()
+        upSalesHistory.Update()
     End Sub
 
     Private Sub ApplyQuickRange(mode As String)
