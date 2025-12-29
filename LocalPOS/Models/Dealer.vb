@@ -43,6 +43,7 @@ Namespace LocalPOS.Models
         Public Property SalesTerritoryCode As Integer?
         Public Property CreditLimit As Decimal?
         Public Property OutstandingBalance As Decimal?
+        Public Property DefaultDiscountPercentage As Decimal?
         Public Property IpAddress As String
         Public Property CreatedOn As Date?
 

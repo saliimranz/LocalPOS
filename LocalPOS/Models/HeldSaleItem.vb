@@ -1,4 +1,4 @@
-﻿Namespace LocalPOS.Models
+Namespace LocalPOS.Models
     ''' <summary>
     ''' Represents a single line item that was parked as part of a held sale.
     ''' </summary>
@@ -7,6 +7,7 @@
         Public Property ProductId As Integer
         Public Property SkuCode As String
         Public Property Name As String
+        Public Property ListUnitPrice As Decimal?
         Public Property UnitPrice As Decimal
         Public Property Quantity As Integer
         Public Property TaxRate As Decimal

@@ -1,6 +1,7 @@
 Imports System
 Imports System.Collections.Generic
 Imports System.Data.SqlClient
+Imports System.Globalization
 Imports System.Linq
 Imports LocalPOS.LocalPOS.Models
 
@@ -395,39 +396,54 @@ WHERE ID = @Id"
         End Sub
 
         Private Shared Sub InsertHeldSaleItems(connection As SqlConnection, transaction As SqlTransaction, heldSaleId As Integer, items As IEnumerable(Of CartItem))
+            Dim hasListUnitPriceColumn = ColumnExists(connection, transaction, "dbo", "TBL_POS_HELD_SALE_ITEM", "LIST_UNIT_PRICE")
             For Each item In items
                 Using command = connection.CreateCommand()
                     command.Transaction = transaction
-                    command.CommandText =
-"INSERT INTO dbo.TBL_POS_HELD_SALE_ITEM
-(
-    HELD_SALE_ID,
-    PRODUCT_ID,
-    SKU_CODE,
-    ITEM_NAME,
-    UNIT_PRICE,
-    QUANTITY,
-    TAX_RATE,
-    LINE_TOTAL,
-    THUMBNAIL_URL
-)
-VALUES
-(
-    @HeldSaleId,
-    @ProductId,
-    @SkuCode,
-    @Name,
-    @UnitPrice,
-    @Quantity,
-    @TaxRate,
-    @LineTotal,
-    @Thumbnail
-)"
+                    Dim sql As New System.Text.StringBuilder()
+                    sql.AppendLine("INSERT INTO dbo.TBL_POS_HELD_SALE_ITEM")
+                    sql.AppendLine("(")
+                    sql.AppendLine("    HELD_SALE_ID,")
+                    sql.AppendLine("    PRODUCT_ID,")
+                    sql.AppendLine("    SKU_CODE,")
+                    sql.AppendLine("    ITEM_NAME,")
+                    sql.AppendLine("    UNIT_PRICE,")
+                    If hasListUnitPriceColumn Then
+                        sql.AppendLine("    LIST_UNIT_PRICE,")
+                    End If
+                    sql.AppendLine("    QUANTITY,")
+                    sql.AppendLine("    TAX_RATE,")
+                    sql.AppendLine("    LINE_TOTAL,")
+                    sql.AppendLine("    THUMBNAIL_URL")
+                    sql.AppendLine(")")
+                    sql.AppendLine("VALUES")
+                    sql.AppendLine("(")
+                    sql.AppendLine("    @HeldSaleId,")
+                    sql.AppendLine("    @ProductId,")
+                    sql.AppendLine("    @SkuCode,")
+                    sql.AppendLine("    @Name,")
+                    sql.AppendLine("    @UnitPrice,")
+                    If hasListUnitPriceColumn Then
+                        sql.AppendLine("    @ListUnitPrice,")
+                    End If
+                    sql.AppendLine("    @Quantity,")
+                    sql.AppendLine("    @TaxRate,")
+                    sql.AppendLine("    @LineTotal,")
+                    sql.AppendLine("    @Thumbnail")
+                    sql.AppendLine(")")
+                    command.CommandText = sql.ToString()
                     command.Parameters.AddWithValue("@HeldSaleId", heldSaleId)
                     command.Parameters.AddWithValue("@ProductId", item.ProductId)
                     command.Parameters.AddWithValue("@SkuCode", ToDbValue(item.SkuCode))
                     command.Parameters.AddWithValue("@Name", item.Name)
                     command.Parameters.AddWithValue("@UnitPrice", item.UnitPrice)
+                    If hasListUnitPriceColumn Then
+                        Dim listPrice = item.ListUnitPrice
+                        If listPrice <= 0D Then
+                            listPrice = item.UnitPrice
+                        End If
+                        command.Parameters.AddWithValue("@ListUnitPrice", Decimal.Round(listPrice, 4, MidpointRounding.AwayFromZero))
+                    End If
                     command.Parameters.AddWithValue("@Quantity", item.Quantity)
                     command.Parameters.AddWithValue("@TaxRate", item.TaxRate)
                     command.Parameters.AddWithValue("@LineTotal", item.LineTotal)
@@ -439,29 +455,42 @@ VALUES
 
         Private Shared Sub FillHeldSaleItems(connection As SqlConnection, heldSaleId As Integer, buffer As IList(Of HeldSaleItem))
             Using command = connection.CreateCommand()
-                command.CommandText =
-"SELECT
-    HELD_SALE_ID,
-    PRODUCT_ID,
-    ISNULL(SKU_CODE, '') AS SKU_CODE,
-    ITEM_NAME,
-    UNIT_PRICE,
-    QUANTITY,
-    TAX_RATE,
-    LINE_TOTAL,
-    ISNULL(THUMBNAIL_URL, '') AS THUMBNAIL_URL
-FROM dbo.TBL_POS_HELD_SALE_ITEM
-WHERE HELD_SALE_ID = @HeldSaleId
-ORDER BY ID ASC"
+                Dim hasListUnitPriceColumn = ColumnExists(connection, Nothing, "dbo", "TBL_POS_HELD_SALE_ITEM", "LIST_UNIT_PRICE")
+                Dim sql As New System.Text.StringBuilder()
+                sql.AppendLine("SELECT")
+                sql.AppendLine("    HELD_SALE_ID,")
+                sql.AppendLine("    PRODUCT_ID,")
+                sql.AppendLine("    ISNULL(SKU_CODE, '') AS SKU_CODE,")
+                sql.AppendLine("    ITEM_NAME,")
+                sql.AppendLine("    UNIT_PRICE,")
+                If hasListUnitPriceColumn Then
+                    sql.AppendLine("    LIST_UNIT_PRICE,")
+                End If
+                sql.AppendLine("    QUANTITY,")
+                sql.AppendLine("    TAX_RATE,")
+                sql.AppendLine("    LINE_TOTAL,")
+                sql.AppendLine("    ISNULL(THUMBNAIL_URL, '') AS THUMBNAIL_URL")
+                sql.AppendLine("FROM dbo.TBL_POS_HELD_SALE_ITEM")
+                sql.AppendLine("WHERE HELD_SALE_ID = @HeldSaleId")
+                sql.AppendLine("ORDER BY ID ASC")
+                command.CommandText = sql.ToString()
                 command.Parameters.AddWithValue("@HeldSaleId", heldSaleId)
 
                 Using reader = command.ExecuteReader()
                     While reader.Read()
+                        Dim listUnitPrice As Decimal? = Nothing
+                        If hasListUnitPriceColumn Then
+                            Dim ordinal = reader.GetOrdinal("LIST_UNIT_PRICE")
+                            If Not reader.IsDBNull(ordinal) Then
+                                listUnitPrice = Convert.ToDecimal(reader.GetValue(ordinal), CultureInfo.InvariantCulture)
+                            End If
+                        End If
                         buffer.Add(New HeldSaleItem() With {
                             .heldSaleId = reader.GetInt32(reader.GetOrdinal("HELD_SALE_ID")),
                             .ProductId = reader.GetInt32(reader.GetOrdinal("PRODUCT_ID")),
                             .SkuCode = reader.GetString(reader.GetOrdinal("SKU_CODE")),
                             .Name = reader.GetString(reader.GetOrdinal("ITEM_NAME")),
+                            .ListUnitPrice = listUnitPrice,
                             .UnitPrice = reader.GetDecimal(reader.GetOrdinal("UNIT_PRICE")),
                             .Quantity = reader.GetInt32(reader.GetOrdinal("QUANTITY")),
                             .TaxRate = reader.GetDecimal(reader.GetOrdinal("TAX_RATE")),
@@ -482,6 +511,24 @@ ORDER BY ID ASC"
                 Return DBNull.Value
             End If
             Return value.Trim()
+        End Function
+
+        Private Shared Function ColumnExists(connection As SqlConnection, transaction As SqlTransaction, schemaName As String, tableName As String, columnName As String) As Boolean
+            If connection Is Nothing OrElse String.IsNullOrWhiteSpace(schemaName) OrElse String.IsNullOrWhiteSpace(tableName) OrElse String.IsNullOrWhiteSpace(columnName) Then
+                Return False
+            End If
+
+            Using command = connection.CreateCommand()
+                command.Transaction = transaction
+                command.CommandText = "SELECT CASE WHEN COL_LENGTH(@FullName, @ColumnName) IS NULL THEN 0 ELSE 1 END"
+                command.Parameters.AddWithValue("@FullName", $"{schemaName}.{tableName}")
+                command.Parameters.AddWithValue("@ColumnName", columnName)
+                Dim raw = command.ExecuteScalar()
+                If raw Is Nothing OrElse raw Is DBNull.Value Then
+                    Return False
+                End If
+                Return Convert.ToInt32(raw, CultureInfo.InvariantCulture) = 1
+            End Using
         End Function
     End Class
 End Namespace

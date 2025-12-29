@@ -96,7 +96,7 @@
                                             NavigateUrl='<%# GetProductDetailsUrl(Eval("Id")) %>'>
                                             <div class="product-thumb">
                                                 <asp:Image runat="server" CssClass="product-thumb-img" ImageUrl='<%# GetProductImage(Eval("ImageUrl")) %>' AlternateText='<%# Eval("DisplayName") %>' />
-                                                <span class="product-price-chip"><%# Eval("UnitPrice", "{0:C}") %></span>
+                                                <span class="product-price-chip"><%# GetCatalogUnitPrice(Eval("UnitPrice")) %></span>
                                             </div>
                                             <div class="product-info">
                                             <div class="product-name"><%# Eval("DisplayName") %></div>
@@ -145,13 +145,11 @@
                                     <div class="cart-item">
                                         <img src='<%# GetProductImage(Eval("Thumbnail")) %>' alt="item" />
                                         <div class="meta">
-                                            <strong><%# Eval("Name") %></strong><br />
-                                            <small>SKU <%# Eval("SkuCode") %></small>
+                                            <strong><%# Eval("Name") %></strong>
                                             <asp:HiddenField runat="server" ID="hfCartProductId" Value='<%# Eval("ProductId") %>' />
                                         </div>
                                         <div class="text-end me-3 cart-item-price">
                                             <div class="fw-bold"><%# Eval("LineTotal", "{0:C}") %></div>
-                                            <small class="text-muted"><%# Eval("UnitPrice", "{0:C}") %> each</small>
                                         </div>
                                         <div class="item-discount-controls mt-2">
                                             <asp:DropDownList runat="server"
